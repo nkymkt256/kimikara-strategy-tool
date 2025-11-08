@@ -1,0 +1,2 @@
+# kimikara-strategy-tool
+レッスンの様子の入力や目標管理を行うGASのwebアプリケーション
