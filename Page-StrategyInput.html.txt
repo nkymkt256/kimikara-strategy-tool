@@ -1,0 +1,9 @@
+<!-- Page-StrategyInput.html -->
+<section>
+  <h2>作戦入力</h2>
+  <form>
+    <label>生徒ID: <input type="text" name="studentId"></label>
+    <label>作戦メモ: <textarea name="strategy"></textarea></label>
+    <button type="submit">保存</button>
+  </form>
+</section>

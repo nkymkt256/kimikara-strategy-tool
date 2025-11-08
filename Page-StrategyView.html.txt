@@ -1,0 +1,5 @@
+<!-- Page-StrategyView.html -->
+<section>
+  <h2>作戦表示</h2>
+  <div id="strategy-view">ここに作戦表示を実装します（プレースホルダ）。</div>
+</section>

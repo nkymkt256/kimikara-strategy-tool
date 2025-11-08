@@ -1,0 +1,9 @@
+<!-- Header.html (ナビゲーション) -->
+<nav>
+  <ul>
+    <li><a href="#" data-page="Page-LessonPlan">レッスン企画</a></li>
+    <li><a href="#" data-page="Page-StrategyInput">作戦入力</a></li>
+    <li><a href="#" data-page="Page-StrategyView">作戦表示</a></li>
+    <li><a href="#" data-page="Page-GoalManagement">目標管理</a></li>
+  </ul>
+</nav>

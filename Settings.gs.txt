@@ -1,0 +1,62 @@
+// Settings.gs
+/**
+ * スクリプトプロパティから値を取得するヘルパー関数
+ * @param {string} key - プロパティのキー
+ * @param {string} [defaultValue] - (オプション) プロパティが見つからない場合のデフォルト値
+ * @returns {string} プロパティの値
+ */
+function getProperty_(key, defaultValue = null) {
+  const value = PropertiesService.getScriptProperties().getProperty(key);
+
+  if (value === null) {
+    // デフォルト値が指定されていればそれを返す
+    if (defaultValue !== null) {
+      return defaultValue;
+    }
+    // デフォルト値がなく、必須のプロパティが見つからない場合はエラー
+    throw new Error(`
+      スクリプト プロパティ '${key}' が設定されていません。
+      GASエディタの [プロジェクト設定] > [スクリプト プロパティ] で設定してください。
+    `);
+  }
+  return value;
+}
+
+/**
+ * プロジェクト全体の設定値
+ * (機密情報は PropertiesService から読み込む)
+ */
+const SETTINGS = {
+
+  GCP: {
+    // (必須) スクリプトプロパティから読み込む
+    PROJECT_ID: getProperty_('GCP_PROJECT_ID'),
+
+    // (固定値) モデル名は機密情報ではないため、コードに記述してOK
+    GEMINI_MODEL: 'gemini-2.5-flash-preview-0514'
+  },
+
+  SS_IDS: {
+    // (必須) スクリプトプロパティから読み込む
+    STUDENT_LIST: getProperty_('HGOSHGSEODHOGEOBWSHIOWH'),
+    FEEDBACK: getProperty_('HGOSHGSsda34et2EOBWSHIOWH'),
+    GOAL_MANAGEMENT: getProperty_('HGhehreheDHOGEOBWSHIOWH')
+  },
+
+  SHEET_NAMES: {
+    // (固定値) シート名は機密情報ではないため、コードに記述してOK
+    STUDENTS: '全生徒一覧',
+    FEEDBACK: 'レッスンふりかえり',
+    GOALS: '目標一覧' // (※ここは「目標一覧」より「生徒ごと目標管理」シートの方が適切かも？)
+    // GOALS: getProperty_('SHEET_NAME_GOALS') // プロパティ化も可能
+  },
+
+  DRIVE: {
+    // (任意) スライド保存先フォルダID。
+    // getProperty_ の第2引数にデフォルト値(null)を指定すると、
+    // 未設定の場合にエラーではなく null (または空文字) が返る
+    SLIDES_FOLDER_ID: getProperty_('DRIVE_FOLDER_ID', null)
+    // 生徒ごとの目標シート保存先フォルダID
+  }
+
+};

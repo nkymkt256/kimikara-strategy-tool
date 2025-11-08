@@ -1,0 +1,6 @@
+// SlideService.gs
+// Google Slides 関連のユーティリティ（プレースホルダ）
+
+function createFeedbackSlide(data) {
+  // Slides API を使ってスライドを作る
+}

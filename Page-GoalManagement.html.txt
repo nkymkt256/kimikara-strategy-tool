@@ -1,0 +1,5 @@
+<!-- Page-GoalManagement.html -->
+<section>
+  <h2>目標管理</h2>
+  <p>生徒ごとの目標管理 UI をここに実装します（プレースホルダ）。</p>
+</section>

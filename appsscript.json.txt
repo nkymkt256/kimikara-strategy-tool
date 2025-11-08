@@ -1,0 +1,19 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "dependencies": {
+    "enabledAdvancedServices": [
+      {
+        "userSymbol": "Slides",
+        "serviceId": "slides",
+        "version": "v1"
+      }
+    ]
+  },
+  "oauthScopes": [
+  ],
+  "webapp": {
+    "access": "ANYONE",
+    "executeAs": "USER_DEPLOYING"
+  },
+  "cloudProject": "YOUR_CLOUD_PROJECT_NUMBER"
+}

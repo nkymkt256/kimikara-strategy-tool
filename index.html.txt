@@ -1,0 +1,19 @@
+<!-- index.html (SPA container) -->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>レッスン管理システム</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    /* ここに共通 CSS を記述します（プレースホルダ） */
+  </style>
+</head>
+<body>
+  <header><!-- Header.html を here に挿入 --></header>
+  <main id="app"><!-- 動的コンテンツ --> </main>
+  <script>
+    // クライアントサイド JS のプレースホルダ
+  </script>
+</body>
+</html>

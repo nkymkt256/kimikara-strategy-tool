@@ -1,0 +1,6 @@
+// DriveService.gs
+// Google Drive 操作のユーティリティ（プレースホルダ）
+
+function moveFile(fileId, folderId) {
+  // DriveApp を使ってファイル移動
+}

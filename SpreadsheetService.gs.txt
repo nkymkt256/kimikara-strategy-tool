@@ -1,0 +1,14 @@
+// SpreadsheetService.gs
+// スプレッドシートの読み書きユーティリティ（プレースホルダ）
+
+function getStudentsList() {
+  // return []; // 生徒一覧を取得
+}
+
+function saveFeedback(studentId, data) {
+  // 保存処理
+}
+
+function getStudentGoals(studentId) {
+  // 目標取得
+}

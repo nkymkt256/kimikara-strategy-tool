@@ -1,0 +1,18 @@
+// Main.gs
+// サーバーサイドのエントリポイントの雛形
+
+function doGet(e) {
+  // return HtmlService.createHtmlOutputFromFile('index');
+}
+
+function include(filename) {
+  // return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function loadPage(pageName) {
+  // サーバー側で Page-*.html を返すハンドラ
+}
+
+function saveFeedbackAndGenerateSlide(data) {
+  // 連携処理の例（SpreadsheetService -> GeminiService -> SlideService）
+}

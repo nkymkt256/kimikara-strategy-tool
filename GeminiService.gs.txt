@@ -1,0 +1,6 @@
+// GeminiService.gs
+// Gemini / Vertex AI 呼び出しのラッパー（プレースホルダ）
+
+function generateContent(prompt) {
+  // UrlFetchApp を使って Vertex AI (Gemini) を呼び出す
+}
