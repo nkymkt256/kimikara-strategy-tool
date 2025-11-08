@@ -1,5 +1,44 @@
 <!-- Page-StrategyView.html -->
-<section>
-  <h2>作戦表示</h2>
-  <div id="strategy-view">ここに作戦表示を実装します（プレースホルダ）。</div>
+<section class="strategy-view-container">
+  <h2>レッスン当日作戦表示・振り返り</h2>
+
+  <div id="strategy-date" class="date-display"></div>
+
+  <!-- 作戦表示エリア -->
+  <div id="strategies-display"></div>
+
+  <!-- 保存ボタン -->
+  <div class="action-buttons">
+    <button id="save-feedback-btn" onclick="saveFeedbackAndGenerate()" class="primary-btn">
+      振り返りを保存してスライド生成
+    </button>
+  </div>
+
+  <div id="generation-status"></div>
 </section>
+
+<template id="strategy-display-template">
+  <div class="strategy-card">
+    <h3 class="student-name"></h3>
+
+    <div class="section">
+      <h4>今日の作戦</h4>
+      <div class="strategy-content readonly"></div>
+    </div>
+
+    <div class="section">
+      <h4>実行結果</h4>
+      <textarea class="result-input" rows="3" placeholder="作戦の実行結果を入力してください..."></textarea>
+    </div>
+
+    <div class="section">
+      <h4>振り返りメモ</h4>
+      <textarea class="feedback-input" rows="4" placeholder="今日のレッスンの振り返りを入力してください..."></textarea>
+    </div>
+
+    <div class="section">
+      <h4>次回やること</h4>
+      <textarea class="next-action-input" rows="3" placeholder="次回のレッスンでやることを入力してください..."></textarea>
+    </div>
+  </div>
+</template>

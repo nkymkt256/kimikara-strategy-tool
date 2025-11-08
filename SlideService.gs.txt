@@ -1,6 +1,115 @@
 // SlideService.gs
-// Google Slides 関連のユーティリティ（プレースホルダ）
+// Google Slides 関連のユーティリティ
 
-function createFeedbackSlide(data) {
-  // Slides API を使ってスライドを作る
-}
+const SlideService = (function() {
+
+  /**
+   * レッスンスライドを作成
+   */
+  function createLessonSlide(slideContent, feedbackData) {
+    try {
+      // 新しいプレゼンテーションを作成
+      const presentation = Slides.Presentations.create({
+        title: slideContent.title || 'レッスンスライド'
+      });
+
+      const presentationId = presentation.presentationId;
+
+      // スライドを追加
+      addSlidesToPresentation(presentationId, slideContent.slides);
+
+      // 指定フォルダに移動
+      if (SETTINGS.DRIVE.SLIDES_FOLDER_ID) {
+        moveToFolder(presentationId, SETTINGS.DRIVE.SLIDES_FOLDER_ID);
+      }
+
+      return `https://docs.google.com/presentation/d/${presentationId}/edit`;
+    } catch (e) {
+      throw new Error('スライド作成エラー: ' + e.message);
+    }
+  }
+
+  /**
+   * プレゼンテーションにスライドを追加
+   */
+  function addSlidesToPresentation(presentationId, slidesData) {
+    const requests = [];
+
+    slidesData.forEach((slide, index) => {
+      // スライドを作成（タイトルとボディのレイアウト）
+      const slideId = `slide_${index}`;
+
+      requests.push({
+        createSlide: {
+          objectId: slideId,
+          slideLayoutReference: {
+            predefinedLayout: 'TITLE_AND_BODY'
+          }
+        }
+      });
+
+      // タイトルとコンテンツを追加
+      requests.push({
+        insertText: {
+          objectId: slideId,
+          text: slide.title,
+          insertionIndex: 0
+        }
+      });
+
+      requests.push({
+        insertText: {
+          objectId: slideId,
+          text: formatSlideContent(slide.content),
+          insertionIndex: 0
+        }
+      });
+    });
+
+    // バッチ更新を実行
+    if (requests.length > 0) {
+      Slides.Presentations.batchUpdate({
+        requests: requests
+      }, presentationId);
+    }
+  }
+
+  /**
+   * スライドコンテンツをフォーマット
+   */
+  function formatSlideContent(content) {
+    // 箇条書きの場合は改行で区切る
+    if (Array.isArray(content)) {
+      return content.map(item => '• ' + item).join('\n');
+    }
+    return content;
+  }
+
+  /**
+   * ファイルを指定フォルダに移動
+   */
+  function moveToFolder(fileId, folderId) {
+    try {
+      const file = DriveApp.getFileById(fileId);
+      const folder = DriveApp.getFolderById(folderId);
+
+      // 既存の親フォルダから削除
+      const parents = file.getParents();
+      while (parents.hasNext()) {
+        const parent = parents.next();
+        parent.removeFile(file);
+      }
+
+      // 新しいフォルダに追加
+      folder.addFile(file);
+    } catch (e) {
+      Logger.log('フォルダ移動エラー: ' + e.message);
+      // エラーが発生してもスライド作成自体は成功しているので、エラーを投げない
+    }
+  }
+
+  // 公開API
+  return {
+    createLessonSlide: createLessonSlide
+  };
+})();

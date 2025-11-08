@@ -33,30 +33,35 @@ const SETTINGS = {
     PROJECT_ID: getProperty_('GCP_PROJECT_ID'),
 
     // (固定値) モデル名は機密情報ではないため、コードに記述してOK
-    GEMINI_MODEL: 'gemini-2.5-flash-preview-0514'
+    // 利用可能なモデル: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash-exp
+    GEMINI_MODEL: 'gemini-1.5-flash'
   },
 
   SS_IDS: {
     // (必須) スクリプトプロパティから読み込む
-    STUDENT_LIST: getProperty_('HGOSHGSEODHOGEOBWSHIOWH'),
-    FEEDBACK: getProperty_('HGOSHGSsda34et2EOBWSHIOWH'),
-    GOAL_MANAGEMENT: getProperty_('HGhehreheDHOGEOBWSHIOWH')
+    STUDENT_LIST: getProperty_('SS_ID_STUDENT_LIST'),
+    FEEDBACK: getProperty_('SS_ID_FEEDBACK', ''),
+    GOAL_MANAGEMENT: getProperty_('SS_ID_GOAL_MANAGEMENT', '')
   },
 
   SHEET_NAMES: {
     // (固定値) シート名は機密情報ではないため、コードに記述してOK
     STUDENTS: '全生徒一覧',
     FEEDBACK: 'レッスンふりかえり',
-    GOALS: '目標一覧' // (※ここは「目標一覧」より「生徒ごと目標管理」シートの方が適切かも？)
-    // GOALS: getProperty_('SHEET_NAME_GOALS') // プロパティ化も可能
+    GOALS: '目標一覧'
+  },
+
+  SHEET_GIDS: {
+    // (オプション) シートGIDを指定する場合はスクリプトプロパティから読み込む
+    // シート名での取得に失敗する場合に使用
+    STUDENTS: getProperty_('SHEET_GID_STUDENTS', null)
   },
 
   DRIVE: {
     // (任意) スライド保存先フォルダID。
     // getProperty_ の第2引数にデフォルト値(null)を指定すると、
     // 未設定の場合にエラーではなく null (または空文字) が返る
-    SLIDES_FOLDER_ID: getProperty_('DRIVE_FOLDER_ID', null)
+    SLIDES_FOLDER_ID: getProperty_('SLIDES_FOLDER_ID', null)
     // 生徒ごとの目標シート保存先フォルダID
   }
-
 };

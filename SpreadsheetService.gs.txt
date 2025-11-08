@@ -1,14 +1,214 @@
 // SpreadsheetService.gs
-// スプレッドシートの読み書きユーティリティ（プレースホルダ）
+// スプレッドシートの読み書きユーティリティ
 
-function getStudentsList() {
-  // return []; // 生徒一覧を取得
-}
+const SpreadsheetService = (function() {
 
-function saveFeedback(studentId, data) {
-  // 保存処理
-}
+  /**
+   * 全生徒一覧を取得
+   */
+  function fetchStudentsList() {
+    try {
+      // スプレッドシートを開く
+      const ss = SpreadsheetApp.openById(SETTINGS.SS_IDS.STUDENT_LIST);
 
-function getStudentGoals(studentId) {
-  // 目標取得
-}
+      // シートを取得（GID指定がある場合はそれを優先）
+      let sheet;
+      if (SETTINGS.SHEET_GIDS.STUDENTS) {
+        // GIDでシートを取得
+        const sheets = ss.getSheets();
+        sheet = sheets.find(function(s) {
+          return s.getSheetId().toString() === SETTINGS.SHEET_GIDS.STUDENTS.toString();
+        });
+
+        if (!sheet) {
+          throw new Error('指定されたGIDのシートが見つかりません: ' + SETTINGS.SHEET_GIDS.STUDENTS);
+        }
+      } else {
+
+        // シート名で取得
+          sheet = ss.getSheetByName(SETTINGS.SHEET_NAMES.STUDENTS);
+          if (!sheet) {
+            // シート名が見つからない場合は最初のシートを使用
+            sheet = ss.getSheets()[0];
+          }
+      }
+
+      // D列2行目以降から生徒データを取得
+      // D列 = 4列目（0-indexed で 3）
+  const lastRow = sheet.getLastRow();
+
+      const students = [];
+
+      // 2行目以降のデータを取得（1行目はヘッダーと仮定）
+      if (lastRow >= 2) {
+        // D列のみ取得（範囲: D2:D[最終行]）
+  const data = sheet.getRange(2, 4, lastRow - 1, 1).getValues();
+
+        for (let i = 0; i < data.length; i++) {
+          const studentName = data[i][0];
+          // 行データ取得
+
+          if (studentName && studentName.toString().trim()) {
+            students.push({
+              id: (i + 1).toString().padStart(3, '0'), // 001, 002, ... の形式でIDを生成
+              name: studentName.toString().trim(),
+              contact: '' // 連絡先は別列にある場合は後で追加
+            });
+          }
+        }
+      }
+
+  // 生徒データ取得完了
+
+      return students;
+
+    } catch (e) {
+      // エラーはログに残して上位に投げる
+      Logger.log('fetchStudentsList エラー: ' + e.message);
+      throw e;
+    }
+  }
+
+  /**
+   * 特定生徒の目標と前回レッスンを取得
+   */
+  function fetchStudentGoalsAndHistory(studentId) {
+    // 目標を取得
+    const goalsSs = SpreadsheetApp.openById(SETTINGS.SS_IDS.GOAL_MANAGEMENT);
+    const goalsSheet = goalsSs.getSheetByName(SETTINGS.SHEET_NAMES.GOALS);
+
+    const goalsData = goalsSheet.getDataRange().getValues();
+    let goals = { longTerm: '', midTerm: '', shortTerm: '' };
+
+    // studentIdでフィルタリング（1列目がID、2列目が目標タイプ、3列目が目標内容と仮定）
+    for (let i = 1; i < goalsData.length; i++) {
+      if (goalsData[i][0] == studentId) {
+        const type = goalsData[i][1];
+        const content = goalsData[i][2];
+
+        if (type === '長期') goals.longTerm = content;
+        else if (type === '中期') goals.midTerm = content;
+        else if (type === '短期') goals.shortTerm = content;
+      }
+    }
+
+    // 前回レッスンを取得
+    const feedbackSs = SpreadsheetApp.openById(SETTINGS.SS_IDS.FEEDBACK);
+    const feedbackSheet = feedbackSs.getSheetByName(SETTINGS.SHEET_NAMES.FEEDBACK);
+
+    const feedbackData = feedbackSheet.getDataRange().getValues();
+    let lastLesson = null;
+
+    // 最新のレッスン記録を取得（日付の降順で最初のもの）
+    for (let i = feedbackData.length - 1; i >= 1; i--) {
+      if (feedbackData[i][1] == studentId) { // 2列目が生徒ID
+        lastLesson = {
+          date: Utilities.formatDate(new Date(feedbackData[i][0]), 'JST', 'yyyy/MM/dd'),
+          content: feedbackData[i][2] || '内容なし'
+        };
+        break;
+      }
+    }
+
+    return {
+      goals: goals,
+      lastLesson: lastLesson
+    };
+  }
+
+  /**
+   * 作戦をスプレッドシートに保存
+   */
+  function writeStrategy(data) {
+    const ss = SpreadsheetApp.openById(SETTINGS.SS_IDS.FEEDBACK);
+    const sheet = ss.getSheetByName(SETTINGS.SHEET_NAMES.FEEDBACK);
+
+    const timestamp = new Date();
+
+    // 各生徒の作戦を1行ずつ追加
+    data.students.forEach(student => {
+      if (student.id && student.strategy) {
+        sheet.appendRow([
+          timestamp,
+          student.id,
+          student.strategy,
+          '作戦', // 種別
+          '' // 振り返り（後で追加）
+        ]);
+      }
+    });
+  }
+
+  /**
+   * 最新の作戦データを取得
+   */
+  function fetchLatestStrategy() {
+    const ss = SpreadsheetApp.openById(SETTINGS.SS_IDS.FEEDBACK);
+    const sheet = ss.getSheetByName(SETTINGS.SHEET_NAMES.FEEDBACK);
+
+    const data = sheet.getDataRange().getValues();
+    const strategies = [];
+
+    // 最新の日付を特定
+    let latestDate = null;
+    for (let i = data.length - 1; i >= 1; i--) {
+      if (data[i][3] === '作戦') {
+        latestDate = data[i][0];
+        break;
+      }
+    }
+
+    if (!latestDate) return { date: null, students: [] };
+
+    // 同じ日付の作戦をすべて取得
+    for (let i = 1; i < data.length; i++) {
+      const rowDate = data[i][0];
+      if (data[i][3] === '作戦' &&
+          rowDate.getTime() === latestDate.getTime()) {
+        strategies.push({
+          studentId: data[i][1],
+          strategy: data[i][2],
+          feedback: data[i][4] || ''
+        });
+      }
+    }
+
+    return {
+      date: Utilities.formatDate(latestDate, 'JST', 'yyyy/MM/dd'),
+      students: strategies
+    };
+  }
+
+  /**
+   * 振り返りを保存
+   */
+  function writeFeedback(data) {
+    const ss = SpreadsheetApp.openById(SETTINGS.SS_IDS.FEEDBACK);
+    const sheet = ss.getSheetByName(SETTINGS.SHEET_NAMES.FEEDBACK);
+
+    const timestamp = new Date();
+
+    // 各生徒の振り返りを保存
+    data.students.forEach(student => {
+      if (student.id) {
+        sheet.appendRow([
+          timestamp,
+          student.id,
+          student.strategy || '',
+          '振り返り',
+          student.feedback || '',
+          student.nextAction || ''
+        ]);
+      }
+    });
+  }
+
+  // 公開API
+  return {
+    fetchStudentsList: fetchStudentsList,
+    fetchStudentGoalsAndHistory: fetchStudentGoalsAndHistory,
+    writeStrategy: writeStrategy,
+    fetchLatestStrategy: fetchLatestStrategy,
+    writeFeedback: writeFeedback
+  };
+})();

@@ -6,14 +6,624 @@
   <title>レッスン管理システム</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    /* ここに共通 CSS を記述します（プレースホルダ） */
+    /* ========================================
+       共通スタイル
+       ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #ffffffff;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #6C757D;
+      margin-bottom: 20px;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+
+    h3 {
+      color: #34495e;
+      margin: 20px 0 10px;
+    }
+
+    h4 {
+      color: #7f8c8d;
+      margin: 10px 0 5px;
+      font-size: 0.9em;
+    }
+
+    /* フォーム要素 */
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    textarea {
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    /* ボタン */
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-right: 10px;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    button:not(.primary-btn) {
+      background: #95a5a6;
+      color: white;
+    }
+
+    .primary-btn {
+      background: #3498db;
+      color: white;
+    }
+
+    .action-buttons {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+    }
+
+    /* 生徒フォーム */
+    .student-form {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .student-info {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .info-section {
+      background: #f9f9f9;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #3498db;
+    }
+
+    .info-section p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    .strategy-container {
+      margin-top: 20px;
+      border-top: 2px solid #3498db;
+      border-radius: 8px;
+    }
+
+    /* 作戦入力ページのメインカード風スタイル
+       - ページコンテンツ内のみ適用して他ページに影響しないようにする */
+    .page-content .strategy-input-container .strategy-container {
+      border: 1px solid #e0e6ee;
+      border-radius: 12px;
+      padding: 24px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(16,24,40,0.04);
+      min-height: 70vh; /* かなり下まで高さを確保 */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 作戦表示カード */
+    .strategy-card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-left: 5px solid #3498db;
+    }
+
+    .strategy-content.readonly {
+      background: #f0f8ff;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      border: 1px solid #d0e7f9;
+    }
+
+    .section {
+      margin: 15px 0;
+    }
+
+    /* ステータス表示 */
+    #save-status, #generation-status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .date-display {
+      background: #ecf0f1;
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    /* Toast通知 */
+    .toast {
+      position: fixed;
+      bottom: -100px;
+      right: 20px;
+      background: #2ecc71;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 9999;
+      transition: bottom 0.3s ease;
+      font-weight: 600;
+    }
+
+    .toast.show {
+      bottom: 20px;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .student-form, .strategy-card {
+        padding: 15px;
+      }
+
+      button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
   </style>
 </head>
 <body>
-  <header><!-- Header.html を here に挿入 --></header>
-  <main id="app"><!-- 動的コンテンツ --> </main>
+  <div class="container">
+    <header><?!= include('Header') ?></header>
+    <main id="app"><!-- 動的コンテンツ --> </main>
+  </div>
+  <style>
+    /* レイアウトコンテナ幅固定 */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px 40px;
+      box-sizing: border-box;
+    }
+
+    /* 挿入されるページ本体の余白は .page-content に付与する */
+    .page-content {
+      box-sizing: border-box;
+    }
+  </style>
   <script>
-    // クライアントサイド JS のプレースホルダ
+    // ========================================
+    // グローバル変数
+    // ========================================
+    let studentsListCache = []; // 生徒一覧キャッシュ
+    const STORAGE_KEY = 'lesson_strategy_draft';
+
+    // ========================================
+    // 初期化
+    // ========================================
+    document.addEventListener('DOMContentLoaded', function() {
+      restoreStrategy();
+    });
+
+    // ========================================
+    // ページ遷移処理
+    // ========================================
+    function handleNavClick(event) {
+      event.preventDefault();
+      const pageName = event.target.getAttribute('data-page');
+      if (!pageName) return;
+
+      google.script.run
+        .withSuccessHandler(updatePage)
+        .withFailureHandler(showError)
+        .loadPage(pageName);
+    }
+
+    function updatePage(html) {
+      // 挿入ページに共通の余白を与えるため、.page-content でラップして挿入
+      document.getElementById('app').innerHTML = `<div class="page-content">${html}</div>`;
+
+      // ページ固有の初期化
+      if (html.includes('strategy-input-container')) {
+        loadStudentsList();
+        restoreStrategy();
+      } else if (html.includes('strategy-view-container')) {
+        loadLatestStrategy();
+      }
+    }
+
+    // ========================================
+    // ステップ1: 作戦入力機能
+    // ========================================
+
+    // 生徒数変更時の処理
+    function handleStudentCountChange() {
+      const count = parseInt(document.getElementById('student-count').value);
+      const container = document.getElementById('students-area');
+      const template = document.getElementById('student-form-template');
+
+      if (!count || count < 1 || count > 5) {
+        container.innerHTML = '';
+        document.getElementById('save-strategy-btn').disabled = true;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const clone = template.content.cloneNode(true);
+        const formDiv = clone.querySelector('.student-form');
+        formDiv.setAttribute('data-index', i);
+        clone.querySelector('.student-number').textContent = i + 1;
+
+        // 生徒選択ドロップダウンに選択肢を追加
+        const select = clone.querySelector('.student-select');
+        studentsListCache.forEach(student => {
+          const option = document.createElement('option');
+          option.value = student.id;
+          option.textContent = student.name;
+          select.appendChild(option);
+        });
+
+        container.appendChild(clone);
+      }
+
+      document.getElementById('save-strategy-btn').disabled = false;
+    }
+
+    // 生徒選択時にデータ取得
+    function loadStudentData(selectElement) {
+      const studentId = selectElement.value;
+      if (!studentId) return;
+
+      const formDiv = selectElement.closest('.student-form');
+      const infoDiv = formDiv.querySelector('.student-info');
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          displayStudentData(formDiv, data);
+          infoDiv.style.display = 'block';
+        })
+        .withFailureHandler(showError)
+        .getStudentData(studentId);
+    }
+
+    // 生徒データを表示
+    function displayStudentData(formDiv, data) {
+      const goalsDiv = formDiv.querySelector('.student-goals');
+      const historyDiv = formDiv.querySelector('.student-history');
+
+      goalsDiv.innerHTML = `
+        <p><strong>長期目標:</strong> ${data.goals?.longTerm || '未設定'}</p>
+        <p><strong>中期目標:</strong> ${data.goals?.midTerm || '未設定'}</p>
+        <p><strong>短期目標:</strong> ${data.goals?.shortTerm || '未設定'}</p>
+      `;
+
+      historyDiv.innerHTML = data.lastLesson
+        ? `<p><strong>日付:</strong> ${data.lastLesson.date}</p>
+           <p><strong>内容:</strong> ${data.lastLesson.content}</p>`
+        : '<p>前回のレッスン記録はありません</p>';
+    }
+
+    // ローカルストレージに自動保存
+    function autoSaveStrategy() {
+      const data = collectStrategyData();
+      if (data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      }
+    }
+
+    // ローカルストレージから復元
+    function restoreStrategy() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+
+      try {
+        const data = JSON.parse(saved);
+        // 生徒数を復元
+        if (data.studentCount) {
+          document.getElementById('student-count').value = data.studentCount;
+          handleStudentCountChange();
+
+          // 少し待ってから各フィールドを復元
+          setTimeout(() => {
+            data.students.forEach((student, index) => {
+              const formDiv = document.querySelector(`.student-form[data-index="${index}"]`);
+              if (formDiv && student.id) {
+                formDiv.querySelector('.student-select').value = student.id;
+                formDiv.querySelector('.strategy-input').value = student.strategy || '';
+                // データを再取得して表示
+                loadStudentData(formDiv.querySelector('.student-select'));
+              }
+            });
+          }, 100);
+        }
+      } catch (e) {
+        console.error('復元エラー:', e);
+      }
+    }
+
+    // 作戦データを収集
+    function collectStrategyData() {
+      const count = document.getElementById('student-count')?.value;
+      if (!count) return null;
+
+      const students = [];
+      document.querySelectorAll('.student-form').forEach((formDiv, index) => {
+        const studentId = formDiv.querySelector('.student-select').value;
+        const strategy = formDiv.querySelector('.strategy-input').value;
+
+        students.push({
+          id: studentId,
+          strategy: strategy
+        });
+      });
+
+      return {
+        studentCount: count,
+        students: students,
+        date: new Date().toISOString()
+      };
+    }
+
+    // サーバーに保存
+    function saveStrategyToServer() {
+      const data = collectStrategyData();
+      if (!data || !data.students.every(s => s.id)) {
+        alert('すべての生徒を選択してください');
+        return;
+      }
+
+      const statusDiv = document.getElementById('save-status');
+      statusDiv.textContent = '保存中...';
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          statusDiv.textContent = '保存しました！';
+          localStorage.removeItem(STORAGE_KEY);
+          setTimeout(() => statusDiv.textContent = '', 3000);
+        })
+        .withFailureHandler(function(error) {
+          statusDiv.textContent = 'エラー: ' + error;
+        })
+        .saveStrategy(data);
+    }
+
+    // ローカルストレージをクリア
+    function clearLocalStorage() {
+      if (confirm('入力内容をクリアしますか?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    }
+
+    // ========================================
+    // ステップ2: 作戦表示・振り返り機能
+    // ========================================
+
+    // 最新の作戦を取得
+    function loadLatestStrategy() {
+      google.script.run
+        .withSuccessHandler(displayStrategy)
+        .withFailureHandler(showError)
+        .getLatestStrategy();
+    }
+
+    // 作戦を表示
+    function displayStrategy(data) {
+      if (!data || !data.students || data.students.length === 0) {
+        document.getElementById('strategies-display').innerHTML =
+          '<p>保存された作戦がありません。先に作戦入力ページで作戦を入力してください。</p>';
+        return;
+      }
+
+      document.getElementById('strategy-date').textContent = `日付: ${data.date}`;
+
+      const container = document.getElementById('strategies-display');
+      const template = document.getElementById('strategy-display-template');
+      container.innerHTML = '';
+
+      data.students.forEach((student, index) => {
+        const clone = template.content.cloneNode(true);
+
+        // 生徒名を取得して表示
+        const studentInfo = studentsListCache.find(s => s.id == student.studentId);
+        clone.querySelector('.student-name').textContent =
+          studentInfo ? studentInfo.name : `生徒ID: ${student.studentId}`;
+
+        // 作戦を表示
+        clone.querySelector('.strategy-content').textContent = student.strategy;
+
+        // データ属性に生徒IDを保存
+        const card = clone.querySelector('.strategy-card');
+        card.setAttribute('data-student-id', student.studentId);
+
+        container.appendChild(clone);
+      });
+
+      document.getElementById('save-feedback-btn').disabled = false;
+    }
+
+    // 振り返りを保存してスライド生成
+    function saveFeedbackAndGenerate() {
+      const cards = document.querySelectorAll('.strategy-card');
+      if (cards.length === 0) {
+        alert('作戦データがありません');
+        return;
+      }
+
+      const students = [];
+      cards.forEach(card => {
+        const studentId = card.getAttribute('data-student-id');
+        const strategy = card.querySelector('.strategy-content').textContent;
+        const result = card.querySelector('.result-input').value;
+        const feedback = card.querySelector('.feedback-input').value;
+        const nextAction = card.querySelector('.next-action-input').value;
+
+        students.push({
+          id: studentId,
+          strategy: strategy,
+          result: result,
+          feedback: feedback,
+          nextAction: nextAction
+        });
+      });
+
+      const data = {
+        date: new Date().toISOString(),
+        students: students
+      };
+
+      const statusDiv = document.getElementById('generation-status');
+      statusDiv.textContent = '保存中...スライドを生成しています...';
+      document.getElementById('save-feedback-btn').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          statusDiv.innerHTML = `
+            <p style="color: green;">✓ 保存が完了しました！</p>
+            <p>スライドURL: <a href="${result.slideUrl}" target="_blank">${result.slideUrl}</a></p>
+          `;
+          showToast('スライドを生成しました！');
+          setTimeout(() => {
+            document.getElementById('save-feedback-btn').disabled = false;
+          }, 3000);
+        })
+        .withFailureHandler(function(error) {
+          statusDiv.innerHTML = `<p style="color: red;">エラー: ${error.message}</p>`;
+          document.getElementById('save-feedback-btn').disabled = false;
+        })
+        .saveFeedbackAndGenerateSlide(data);
+    }
+
+    // ========================================
+    // データ取得・初期化
+    // ========================================
+
+    // 生徒一覧を取得する関数
+    function loadStudentsList() {
+      google.script.run
+        .withSuccessHandler(function(response) {
+          try {
+            // JSON文字列をパース
+            let students = response;
+            console.log('取得した生徒一覧:', response);
+
+            // 文字列として返ってきた場合はパース
+            if (typeof response === 'string') {
+              // XSRFプレフィックスの除去
+              if (response.startsWith(")]}'\n")) {
+                response = response.substring(4);
+              }
+              students = JSON.parse(response);
+            }
+
+            studentsListCache = students;
+            console.log('生徒一覧をキャッシュしました 件数:', Array.isArray(studentsListCache) ? studentsListCache.length : 0);
+          } catch (e) {
+            console.error('生徒データのパースエラー:', e);
+            showError('生徒データの読み込みに失敗しました');
+          }
+        })
+        .withFailureHandler(function(error) {
+          console.error('生徒一覧の取得エラー:', error);
+          showError('生徒一覧の取得に失敗しました');
+        })
+        .getStudentsList();
+    }
+
+    // ページ読み込み時の初期化
+    window.onload = function() {
+      google.script.run
+        .withSuccessHandler(updatePage)
+        .withFailureHandler(showError)
+        .loadPage('Page-StrategyInput');
+    };
+
+    // ========================================
+    // ユーティリティ
+    // ========================================
+
+    // Toast通知を表示
+    function showToast(message, duration = 3000) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    // エラー表示
+    function showError(message) {
+      console.error('エラー:', message);
+      showToast('エラー: ' + message, 5000);
+    }
   </script>
 </body>
 </html>

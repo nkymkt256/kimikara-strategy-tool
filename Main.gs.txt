@@ -1,18 +1,105 @@
 // Main.gs
-// サーバーサイドのエントリポイントの雛形
+// サーバーサイドのエントリポイント
 
+/**
+ * Webアプリケーションのエントリーポイント
+ */
 function doGet(e) {
-  // return HtmlService.createHtmlOutputFromFile('index');
+  const template = HtmlService.createTemplateFromFile('index');
+  return template.evaluate()
+    .setTitle('レッスン管理システム')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/**
+ * HTMLファイルの内容を取得（include用）
+ */
 function include(filename) {
-  // return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+/**
+ * ページ遷移時のHTMLコンテンツを返す
+ */
 function loadPage(pageName) {
-  // サーバー側で Page-*.html を返すハンドラ
+  try {
+    return HtmlService.createHtmlOutputFromFile(pageName).getContent();
+  } catch (e) {
+    return '<p>ページの読み込みに失敗しました: ' + e.message + '</p>';
+  }
 }
 
+// ========================================
+// ステップ1: 作戦入力機能
+// ========================================
+
+/**
+ * 全生徒一覧を取得
+ */
+function getStudentsList() {
+  try {
+    const result = SpreadsheetService.fetchStudentsList();
+    // google.script.run expects a plain JS object/array that can be
+    // serialized to the client. Return the array directly.
+    return result;
+  } catch (e) {
+    throw new Error('生徒一覧の取得に失敗しました: ' + e.message);
+  }
+}
+
+/**
+ * 特定生徒の目標と前回レッスンを取得
+ */
+function getStudentData(studentId) {
+  try {
+    return SpreadsheetService.fetchStudentGoalsAndHistory(studentId);
+  } catch (e) {
+    throw new Error('生徒データの取得に失敗しました: ' + e.message);
+  }
+}
+
+/**
+ * 作戦をスプレッドシートに保存
+ */
+function saveStrategy(data) {
+  try {
+    return SpreadsheetService.writeStrategy(data);
+  } catch (e) {
+    throw new Error('作戦の保存に失敗しました: ' + e.message);
+  }
+}
+
+// ========================================
+// ステップ2: 作戦表示・振り返り機能
+// ========================================
+
+/**
+ * 最新の作戦データを取得
+ */
+function getLatestStrategy() {
+  try {
+    return SpreadsheetService.fetchLatestStrategy();
+  } catch (e) {
+    throw new Error('作戦データの取得に失敗しました: ' + e.message);
+  }
+}
+
+/**
+ * 振り返りを保存してスライド生成
+ */
 function saveFeedbackAndGenerateSlide(data) {
-  // 連携処理の例（SpreadsheetService -> GeminiService -> SlideService）
+  try {
+    // 1. スプレッドシートに振り返りを保存
+    SpreadsheetService.writeFeedback(data);
+
+    // 2. Geminiでスライド内容を生成
+    const slideContent = GeminiService.generateSlideContent(data);
+
+    // 3. スライドを作成
+    const slideUrl = SlideService.createLessonSlide(slideContent);
+
+    return { success: true, slideUrl: slideUrl };
+  } catch (e) {
+    throw new Error('振り返りの保存またはスライド生成に失敗しました: ' + e.message);
+  }
 }

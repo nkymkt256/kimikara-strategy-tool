@@ -1,6 +1,146 @@
 // GeminiService.gs
-// Gemini / Vertex AI 呼び出しのラッパー（プレースホルダ）
+// Gemini / Vertex AI 呼び出しのラッパー
 
-function generateContent(prompt) {
-  // UrlFetchApp を使って Vertex AI (Gemini) を呼び出す
+const GeminiService = (function() {
+
+  /**
+   * スライド内容をGeminiで生成
+   */
+  function generateSlideContent(feedbackData) {
+    const prompt = buildPrompt(feedbackData);
+
+    try {
+      const response = callGeminiAPI(prompt);
+      return parseGeminiResponse(response);
+    } catch (e) {
+      throw new Error('Gemini API呼び出しエラー: ' + e.message);
+    }
+  }
+
+  /**
+   * プロンプトを構築
+   */
+  function buildPrompt(data) {
+    let prompt = `あなたは教育レッスンのスライド作成アシスタントです。
+以下のレッスン振り返り情報をもとに、次回のレッスンスライドの内容を生成してください。
+
+## レッスン振り返り情報
+
+`;
+
+    data.students.forEach((student, index) => {
+      prompt += `
+### 生徒 ${index + 1}
+- 今日の作戦: ${student.strategy}
+- 実行結果: ${student.result || '記載なし'}
+- 振り返り: ${student.feedback || '記載なし'}
+- 次回やること: ${student.nextAction || '記載なし'}
+
+`;
+    });
+
+    prompt += `
+## 出力形式
+
+以下のJSON形式で出力してください:
+
+\`\`\`json
+{
+  "title": "スライドのタイトル",
+  "slides": [
+    {
+      "title": "スライド1のタイトル",
+      "content": "スライド1の内容（箇条書き可）"
+    },
+    {
+      "title": "スライド2のタイトル",
+      "content": "スライド2の内容"
+    }
+  ]
 }
+\`\`\`
+
+要件:
+- 各生徒の振り返りを踏まえた内容にすること
+- 次回のレッスンで使える実践的な内容にすること
+- スライドは3〜5枚程度にすること
+- 簡潔で分かりやすい表現にすること
+`;
+
+    return prompt;
+  }
+
+  /**
+   * Gemini APIを呼び出す
+   */
+  function callGeminiAPI(prompt) {
+    const projectId = SETTINGS.GCP.PROJECT_ID;
+    const model = SETTINGS.GCP.GEMINI_MODEL;
+    const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/${model}:generateContent`;
+
+    const payload = {
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048,
+      }
+    };
+
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'Authorization': 'Bearer ' + ScriptApp.getOAuthToken()
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(endpoint, options);
+    const responseCode = response.getResponseCode();
+
+    if (responseCode !== 200) {
+      throw new Error(`API Error (${responseCode}): ${response.getContentText()}`);
+    }
+
+    const result = JSON.parse(response.getContentText());
+
+    if (!result.candidates || result.candidates.length === 0) {
+      throw new Error('Geminiから応答がありませんでした');
+    }
+
+    return result.candidates[0].content.parts[0].text;
+  }
+
+  /**
+   * Geminiの応答をパース
+   */
+  function parseGeminiResponse(responseText) {
+    try {
+      // JSONブロックを抽出
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
+      const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+
+      return JSON.parse(jsonText);
+    } catch (e) {
+      // パースに失敗した場合、シンプルな構造を返す
+      return {
+        title: 'レッスンスライド',
+        slides: [
+          {
+            title: '本日のレッスン',
+            content: responseText.substring(0, 500)
+          }
+        ]
+      };
+    }
+  }
+
+  // 公開API
+  return {
+    generateSlideContent: generateSlideContent
+  };
+})();
