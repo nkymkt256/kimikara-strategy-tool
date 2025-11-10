@@ -22,7 +22,7 @@ const GeminiService = (function() {
    */
   function buildPrompt(data) {
     let prompt = `あなたは教育レッスンのスライド作成アシスタントです。
-以下のレッスン振り返り情報をもとに、次回のレッスンスライドの内容を生成してください。
+以下のレッスン振り返り情報をもとに、レッスン報告スライドの内容を生成してください。
 
 ## レッスン振り返り情報
 
@@ -31,10 +31,9 @@ const GeminiService = (function() {
     data.students.forEach((student, index) => {
       prompt += `
 ### 生徒 ${index + 1}
-- 今日の作戦: ${student.strategy}
-- 実行結果: ${student.result || '記載なし'}
-- 振り返り: ${student.feedback || '記載なし'}
-- 次回やること: ${student.nextAction || '記載なし'}
+- 今回のレッスンの内容: ${student.lessonContent || '記載なし'}
+- ふりかえり: ${student.lessonFeedback || '記載なし'}
+- 次回のレッスンでやること: ${student.lessonNext || '記載なし'}
 
 `;
     });
@@ -61,10 +60,11 @@ const GeminiService = (function() {
 \`\`\`
 
 要件:
-- 各生徒の振り返りを踏まえた内容にすること
-- 次回のレッスンで使える実践的な内容にすること
-- スライドは3〜5枚程度にすること
+- 各生徒のレッスン内容と振り返りを踏まえた報告スライドにすること
+- レッスンの成果と次回の目標が分かりやすく伝わるようにすること
+- スライドは生徒1人あたり1〜2枚程度にすること
 - 簡潔で分かりやすい表現にすること
+- 保護者や関係者に向けた報告として適切な内容にすること
 `;
 
     return prompt;

@@ -2,43 +2,63 @@
 <section class="strategy-view-container">
   <h2>レッスン当日作戦表示・振り返り</h2>
 
-  <div id="strategy-date" class="date-display"></div>
+  <div class="strategy-container">
+    <!-- 動的に生成される生徒表示・振り返り入力エリア -->
+    <div id="students-view-area"></div>
 
-  <!-- 作戦表示エリア -->
-  <div id="strategies-display"></div>
+    <!-- 保存ボタン -->
+    <div class="action-buttons">
+      <button id="save-feedback-btn" onclick="saveFeedbackAndGenerate()" class="primary-btn" disabled>
+        振り返りを保存してスライド生成
+      </button>
+    </div>
 
-  <!-- 保存ボタン -->
-  <div class="action-buttons">
-    <button id="save-feedback-btn" onclick="saveFeedbackAndGenerate()" class="primary-btn">
-      振り返りを保存してスライド生成
-    </button>
+    <div id="generation-status"></div>
   </div>
-
-  <div id="generation-status"></div>
 </section>
 
-<template id="strategy-display-template">
-  <div class="strategy-card">
-    <h3 class="student-name"></h3>
+<template id="student-view-template">
+  <div class="student-form" data-student-id="">
+    <h3>生徒: <span class="student-name-display"></span></h3>
 
-    <div class="section">
-      <h4>今日の作戦</h4>
-      <div class="strategy-content readonly"></div>
-    </div>
+    <div class="student-info">
+      <!-- 作戦の表示 -->
+      <div class="strategy-display-section">
+        <h4 style="color: #2c3e50; margin-bottom: 10px;">本日の作戦</h4>
+        <div class="student-strategies-container"></div>
+      </div>
 
-    <div class="section">
-      <h4>実行結果</h4>
-      <textarea class="result-input" rows="3" placeholder="作戦の実行結果を入力してください..."></textarea>
-    </div>
+      <!-- レッスン全体の振り返り入力 -->
+      <div class="lesson-feedback-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+        <h4 style="color: #2c3e50; margin-bottom: 15px;">レッスンの振り返り</h4>
 
-    <div class="section">
-      <h4>振り返りメモ</h4>
-      <textarea class="feedback-input" rows="4" placeholder="今日のレッスンの振り返りを入力してください..."></textarea>
-    </div>
+        <div class="form-group">
+          <label>今回のレッスンの内容:</label>
+          <textarea
+            class="lesson-content-input"
+            rows="4"
+            placeholder="今回のレッスンで何をやったかを記入してください..."
+          ></textarea>
+        </div>
 
-    <div class="section">
-      <h4>次回やること</h4>
-      <textarea class="next-action-input" rows="3" placeholder="次回のレッスンでやることを入力してください..."></textarea>
+        <div class="form-group">
+          <label>ふりかえり:</label>
+          <textarea
+            class="lesson-feedback-input"
+            rows="5"
+            placeholder="レッスンの振り返りを記入してください..."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>次回のレッスンでやること:</label>
+          <textarea
+            class="lesson-next-input"
+            rows="4"
+            placeholder="次回のレッスンで取り組むことを記入してください..."
+          ></textarea>
+        </div>
+      </div>
     </div>
   </div>
 </template>

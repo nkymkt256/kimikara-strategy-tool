@@ -48,7 +48,8 @@ const SETTINGS = {
     // (固定値) シート名は機密情報ではないため、コードに記述してOK
     STUDENTS: '全生徒一覧',
     FEEDBACK: 'レッスンふりかえり',
-    GOALS: '目標一覧'
+    GOALS: '目標一覧',
+    LESSON_STRATEGY: '本日のレッスンの作戦'
   },
 
   SHEET_GIDS: {
@@ -61,7 +62,9 @@ const SETTINGS = {
     // (任意) スライド保存先フォルダID。
     // getProperty_ の第2引数にデフォルト値(null)を指定すると、
     // 未設定の場合にエラーではなく null (または空文字) が返る
-    SLIDES_FOLDER_ID: getProperty_('SLIDES_FOLDER_ID', null)
-    // 生徒ごとの目標シート保存先フォルダID
+    SLIDES_FOLDER_ID: getProperty_('SLIDES_FOLDER_ID', null),
+    // (任意) 生徒ごとの目標シート保存先フォルダID
+    // フォルダ内に「レッスン情報_生徒名」という名前のスプレッドシートが保存されている
+    GOAL_SHEETS_FOLDER_ID: getProperty_('GOAL_SHEETS_FOLDER_ID', null)
   }
 };
