@@ -109,7 +109,7 @@ const SpreadsheetService = (function() {
         return { goals: [], lastLesson: null };
       }
 
-      // B列(2), C列(3), G列(7), L列(12), M列(13)を取得
+      // B列(2), C列(3), G列(7), J列(10), K列(11), L列(12), M列(13)を取得
       const data = goalsSheet.getRange(3, 1, lastRow - 2, 13).getValues();
 
       const goals = [];
@@ -117,6 +117,8 @@ const SpreadsheetService = (function() {
         const category = data[i][1]; // B列（インデックス1）
         const item = data[i][2];     // C列（インデックス2）
         const goal = data[i][6];     // G列（インデックス6）
+        const strategy = data[i][9]; // J列（インデックス9）- 今回の作戦
+        const feedback = data[i][10]; // K列（インデックス10）- 振り返り
         const lastStrategy = data[i][11]; // L列（インデックス11）
         const lastResult = data[i][12];   // M列（インデックス12）
 
@@ -126,6 +128,8 @@ const SpreadsheetService = (function() {
             category: category.toString().trim(),
             item: item.toString().trim(),
             goal: goal ? goal.toString().trim() : '',
+            strategy: strategy ? strategy.toString().trim() : '',
+            feedback: feedback ? feedback.toString().trim() : '',
             lastStrategy: lastStrategy ? lastStrategy.toString().trim() : '',
             lastResult: lastResult ? lastResult.toString().trim() : ''
           });
@@ -300,12 +304,83 @@ const SpreadsheetService = (function() {
     });
   }
 
+  /**
+   * 生徒1人分の振り返りを保存
+   * 「本日のレッスンの作戦」シートのK列、12行目以降に順番に保存
+   * @param {object} studentData - { id, lessonContent, lessonFeedback, lessonNext, goalItemsFeedback }
+   */
+  function writeSingleFeedback(studentData) {
+    try {
+      // 生徒一覧を取得
+      const students = fetchStudentsList();
+      const studentInfo = students.find(s => s.id === studentData.id);
+
+      if (!studentInfo) {
+        throw new Error('生徒が見つかりません: ID=' + studentData.id);
+      }
+
+      // 生徒のスプレッドシートを開く
+      const goalsSs = findStudentSpreadsheet(studentInfo.name);
+      const sheet = goalsSs.getSheetByName(SETTINGS.SHEET_NAMES.LESSON_STRATEGY);
+
+      if (!sheet) {
+        throw new Error('シート「本日のレッスンの作戦」が見つかりません: ' + studentInfo.name);
+      }
+
+      // K列（11列目）の12行目（rowIndex=12）から順番に保存
+      // 12行目: lessonContent
+      // 13行目: lessonFeedback
+      // 14行目: lessonNext
+      // 15行目: studentCondition
+      // 16行目: studentGrowth
+      // 17行目: studentInfo
+
+      sheet.getRange(12, 11).setValue(studentData.lessonContent || '');
+      sheet.getRange(13, 11).setValue(studentData.lessonFeedback || '');
+      sheet.getRange(14, 11).setValue(studentData.lessonNext || '');
+      sheet.getRange(15, 11).setValue(studentData.studentCondition || '');
+      sheet.getRange(16, 11).setValue(studentData.studentGrowth || '');
+      sheet.getRange(17, 11).setValue(studentData.studentInfo || '');
+
+      // 目標項目ごとの振り返りを保存（K列の3行目以降に保存）
+      if (studentData.goalItemsFeedback && studentData.goalItemsFeedback.length > 0) {
+        const lastRow = sheet.getLastRow();
+        if (lastRow >= 3) {
+          // B列、C列、K列を含む範囲を取得
+          const data = sheet.getRange(3, 1, lastRow - 2, 11).getValues();
+
+          // 各振り返りについて、該当する行を探してK列に書き込む
+          studentData.goalItemsFeedback.forEach(item => {
+            for (let i = 0; i < data.length; i++) {
+              const category = data[i][1] ? data[i][1].toString().trim() : ''; // B列
+              const itemName = data[i][2] ? data[i][2].toString().trim() : '';  // C列
+
+              // カテゴリと項目が一致したら、その行のK列に振り返りを書き込む
+              if (category === item.category && itemName === item.item) {
+                const rowNumber = i + 3; // 3行目から開始
+                sheet.getRange(rowNumber, 11).setValue(item.feedback); // K列 = 11列目
+                break;
+              }
+            }
+          });
+        }
+      }
+
+      Logger.log('振り返りを保存しました: ' + studentInfo.name);
+      return { success: true };
+    } catch (e) {
+      Logger.log('writeSingleFeedback エラー: ' + e.message);
+      throw e;
+    }
+  }
+
   // 公開API
   return {
     fetchStudentsList: fetchStudentsList,
     fetchStudentGoalsAndHistory: fetchStudentGoalsAndHistory,
     writeStrategy: writeStrategy,
     fetchLatestStrategy: fetchLatestStrategy,
-    writeFeedback: writeFeedback
+    writeFeedback: writeFeedback,
+    writeSingleFeedback: writeSingleFeedback
   };
 })();

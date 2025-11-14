@@ -342,6 +342,10 @@
       100% { transform: rotate(360deg); }
     }
 
+    .spin-icon {
+      animation: spin 1s linear infinite;
+    }
+
     .loading-text {
       color: #666;
       font-size: 16px;
@@ -370,6 +374,8 @@
       }
     }
   </style>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="container">
@@ -610,6 +616,12 @@
       }
     }
 
+    // ローカルストレージをクリア
+    function clearStrategyCache() {
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('作戦キャッシュをクリアしました');
+    }
+
     // ローカルストレージから復元
     function restoreStrategy() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -626,8 +638,10 @@
           setTimeout(() => {
             data.students.forEach((student, index) => {
               const formDiv = document.querySelector(`.student-form[data-index="${index}"]`);
-              if (formDiv && student.id) {
-                formDiv.querySelector('.student-select').value = student.id;
+              const studentSelect = formDiv?.querySelector('.student-select');
+
+              if (formDiv && student.id && studentSelect) {
+                studentSelect.value = student.id;
 
                 // データを再取得して表示
                 google.script.run
@@ -771,66 +785,126 @@
       const template = document.getElementById('student-view-template');
       viewArea.innerHTML = '';
 
-      data.students.forEach((student, index) => {
-        if (!student.id) return;
+      // ローディング表示
+      viewArea.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner" style="margin: 0 auto;"></div><p style="color: #666; margin-top: 20px;">生徒データを読み込んでいます...</p></div>';
 
-        const clone = template.content.cloneNode(true);
-        const formDiv = clone.querySelector('.student-form');
-        formDiv.setAttribute('data-student-id', student.id);
+      // 各生徒のデータをサーバーから取得（最新の振り返りを含む）
+      const studentLoadPromises = data.students.map((student, index) => {
+        if (!student.id) return Promise.resolve();
 
-        // 生徒名を表示
-        const studentInfo = studentsListCache.find(s => s.id === student.id);
-        clone.querySelector('.student-name-display').textContent =
-          studentInfo ? studentInfo.name : `生徒ID: ${student.id}`;
-
-        // キャッシュから目標データを取得して表示
-        if (studentGoalsCache[student.id]) {
-          displayStrategyViewData(formDiv, studentGoalsCache[student.id], student.itemStrategies || []);
-        }
-
-        viewArea.appendChild(clone);
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(function(goalData) {
+              resolve({ student, goalData });
+            })
+            .withFailureHandler(function(error) {
+              console.error('生徒データ取得エラー:', error);
+              resolve({ student, goalData: null });
+            })
+            .getStudentData(student.id);
+        });
       });
 
-      const saveBtn = document.getElementById('save-feedback-btn');
-      if (saveBtn) {
-        saveBtn.disabled = false;
-      }
+      // すべての生徒データを取得完了後に表示
+      Promise.all(studentLoadPromises).then(results => {
+        viewArea.innerHTML = '';
+
+        results.forEach(({ student, goalData }) => {
+          if (!student || !student.id) return;
+
+          const clone = template.content.cloneNode(true);
+          const formDiv = clone.querySelector('.student-form');
+          formDiv.setAttribute('data-student-id', student.id);
+
+          // 生徒名を表示
+          const studentInfo = studentsListCache.find(s => s.id === student.id);
+          clone.querySelector('.student-name-display').textContent =
+            studentInfo ? studentInfo.name : `生徒ID: ${student.id}`;
+
+          // サーバーから取得した最新のデータを表示（振り返りを含む）
+          if (goalData && goalData.goals) {
+            displayStrategyViewData(formDiv, goalData, student.itemStrategies || []);
+          }
+
+          viewArea.appendChild(clone);
+
+          // Lucideアイコンを初期化
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
+        });
+
+        const saveBtn = document.getElementById('save-feedback-btn');
+        if (saveBtn) {
+          saveBtn.disabled = false;
+        }
+      }).catch(error => {
+        console.error('生徒データ取得エラー:', error);
+        viewArea.innerHTML = '<p style="color: #ef4444;">生徒データの読み込みに失敗しました</p>';
+      });
     }
 
-    // 作戦表示ページ用のデータ表示（作戦のみ表示、振り返りは生徒全体）
+    // 作戦表示ページ用のデータ表示（目標と作戦を各項目ごとに表示）
     function displayStrategyViewData(formDiv, goalData, savedStrategies) {
-      const strategiesContainer = formDiv.querySelector('.student-strategies-container');
+      const goalsFeedbackContainer = formDiv.querySelector('.student-goals-feedback-container');
 
-      if (!savedStrategies || savedStrategies.length === 0) {
-        strategiesContainer.innerHTML = '<p style="color: #999;">入力された作戦がありません</p>';
+      // 作戦をマップ化（高速検索用）
+      const strategyMap = {};
+      if (savedStrategies && savedStrategies.length > 0) {
+        savedStrategies.forEach(item => {
+          const key = `${item.category}|||${item.item}`;
+          strategyMap[key] = item.strategy;
+        });
+      }
+
+      // 目標データがない場合
+      if (!goalData.goals || goalData.goals.length === 0) {
+        goalsFeedbackContainer.innerHTML = '';
         return;
       }
 
       // カテゴリごとにグループ化
-      const categorized = {};
-      savedStrategies.forEach(item => {
-        if (!categorized[item.category]) {
-          categorized[item.category] = [];
+      const categorizedGoals = {};
+      goalData.goals.forEach(item => {
+        if (!categorizedGoals[item.category]) {
+          categorizedGoals[item.category] = [];
         }
-        categorized[item.category].push(item);
+        categorizedGoals[item.category].push(item);
       });
 
-      // HTMLを構築（作戦の表示のみ）
+      // HTMLを構築（各項目ごとに目標・作戦・振り返り入力を表示）
       let html = '';
-      for (const category in categorized) {
+      for (const category in categorizedGoals) {
         html += `
           <div class="goal-category">
             <h4 class="category-title">${category}</h4>
         `;
 
-        categorized[category].forEach(item => {
+        categorizedGoals[category].forEach(item => {
+          const hasGoal = item.goal && item.goal.trim();
+          const key = `${category}|||${item.item}`;
+          const strategy = strategyMap[key] || item.strategy || '';
+          const hasStrategy = strategy.trim() !== '';
+          const savedFeedback = item.feedback || '';
+
           html += `
             <div class="goal-item">
               <div class="goal-item-header">
                 <strong>${item.item}</strong>
               </div>
               <div class="goal-item-content">
-                <div class="strategy-content readonly">${item.strategy}</div>
+                ${hasGoal ? `<p><span class="label">目標:</span> ${item.goal}</p>` : '<p class="no-goal">目標未設定</p>'}
+                ${hasStrategy ? `<p><span class="label">作戦:</span> <span class="strategy-content readonly">${strategy}</span></p>` : '<p style="color: #999;">作戦未設定</p>'}
+                <div class="form-group" style="margin-top: 10px;">
+                  <label>この項目の振り返り:</label>
+                  <textarea
+                    class="goal-item-feedback-input"
+                    data-category="${category}"
+                    data-item="${item.item}"
+                    rows="3"
+                    placeholder="この目標項目についての振り返りを入力..."
+                  >${savedFeedback}</textarea>
+                </div>
               </div>
             </div>
           `;
@@ -839,72 +913,370 @@
         html += '</div>';
       }
 
-      strategiesContainer.innerHTML = html;
+      // 統合表示（作戦コンテナは非表示にして、目標フィードバックコンテナに全て表示）
+      goalsFeedbackContainer.innerHTML = html;
     }
 
-    // 振り返りを保存してスライド生成
-    function saveFeedbackAndGenerate() {
-      const forms = document.querySelectorAll('#students-view-area .student-form');
-      if (forms.length === 0) {
-        alert('作戦データがありません');
+    /**
+     * 生徒1人分の振り返りを保存してAI生成
+     */
+    function saveSingleStudentFeedback(button) {
+      const formDiv = button.closest('.student-form');
+      const studentId = formDiv.getAttribute('data-student-id');
+      const statusDiv = formDiv.querySelector('.single-student-status');
+      const slideSettingsSection = formDiv.querySelector('.slide-settings-section');
+
+      if (!studentId) {
+        alert('生徒IDが取得できません');
         return;
       }
 
-      const students = [];
-      forms.forEach(formDiv => {
-        const studentId = formDiv.getAttribute('data-student-id');
-        if (!studentId) return;
+      // フォームデータを取得
+      const lessonContentInput = formDiv.querySelector('.lesson-content-input');
+      const lessonFeedbackInput = formDiv.querySelector('.lesson-feedback-input');
+      const lessonNextInput = formDiv.querySelector('.lesson-next-input');
+      const studentConditionInput = formDiv.querySelector('.student-condition-input');
+      const studentGrowthInput = formDiv.querySelector('.student-growth-input');
+      const studentInfoInput = formDiv.querySelector('.student-info-input');
 
-        // 生徒ごとの全体振り返りを収集
-        const lessonContentInput = formDiv.querySelector('.lesson-content-input');
-        const lessonFeedbackInput = formDiv.querySelector('.lesson-feedback-input');
-        const lessonNextInput = formDiv.querySelector('.lesson-next-input');
+      // 目標項目ごとの振り返りを収集
+      const goalItemsFeedback = [];
+      formDiv.querySelectorAll('.goal-item-feedback-input').forEach(input => {
+        const category = input.getAttribute('data-category');
+        const item = input.getAttribute('data-item');
+        const feedback = input.value.trim();
 
-        const lessonContent = lessonContentInput ? lessonContentInput.value.trim() : '';
-        const lessonFeedback = lessonFeedbackInput ? lessonFeedbackInput.value.trim() : '';
-        const lessonNext = lessonNextInput ? lessonNextInput.value.trim() : '';
-
-        // 少なくとも1つは入力されている場合のみ追加
-        if (lessonContent || lessonFeedback || lessonNext) {
-          students.push({
-            id: studentId,
-            lessonContent: lessonContent,
-            lessonFeedback: lessonFeedback,
-            lessonNext: lessonNext
+        if (feedback) {
+          goalItemsFeedback.push({
+            category: category,
+            item: item,
+            feedback: feedback
           });
         }
       });
 
-      if (students.length === 0) {
-        alert('振り返りデータが入力されていません');
+      const studentData = {
+        id: studentId,
+        lessonContent: lessonContentInput ? lessonContentInput.value.trim() : '',
+        lessonFeedback: lessonFeedbackInput ? lessonFeedbackInput.value.trim() : '',
+        lessonNext: lessonNextInput ? lessonNextInput.value.trim() : '',
+        studentCondition: studentConditionInput ? studentConditionInput.value.trim() : '',
+        studentGrowth: studentGrowthInput ? studentGrowthInput.value.trim() : '',
+        studentInfo: studentInfoInput ? studentInfoInput.value.trim() : '',
+        goalItemsFeedback: goalItemsFeedback
+      };
+
+      // 入力チェック
+      if (!studentData.lessonContent && !studentData.lessonFeedback && !studentData.lessonNext) {
+        alert('振り返り内容を入力してください');
         return;
       }
 
-      const data = {
-        date: new Date().toISOString(),
-        students: students
+      // ボタンを無効化
+      button.disabled = true;
+      statusDiv.innerHTML = '<p style="color: #3498db; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i>保存中...</p>';
+      lucide.createIcons();
+
+      // スプレッドシートに保存（AI生成はしない）
+      google.script.run
+        .withSuccessHandler(function(result) {
+          statusDiv.innerHTML = '<p style="color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 8px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>保存完了！</p>';
+          lucide.createIcons();
+          showToast('振り返りを保存しました');
+
+          // 保存完了後、作戦入力のキャッシュをクリア
+          clearStrategyCache();
+
+          // スライド設定セクションを表示
+          slideSettingsSection.style.display = 'block';
+
+          // スライド設定セクションまでスクロール
+          slideSettingsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+          // studentDataをフォームに保存
+          formDiv.setAttribute('data-saved-student-data', JSON.stringify(studentData));
+
+          button.disabled = false;
+        })
+        .withFailureHandler(function(error) {
+          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: ${error.message}</p>`;
+          lucide.createIcons();
+          button.disabled = false;
+        })
+        .saveSingleStudentFeedback(studentData);
+    }
+
+    /**
+     * スライドデータを生成（設定を含む）
+     */
+    function generateSlideData(button) {
+      const formDiv = button.closest('.student-form');
+      const statusDiv = formDiv.querySelector('.single-student-status');
+      const slideSettingsSection = formDiv.querySelector('.slide-settings-section');
+      const aiPreviewArea = formDiv.querySelector('.ai-preview-area');
+      const slideStructurePreview = formDiv.querySelector('.slide-structure-preview');
+      const slideGenerateArea = formDiv.querySelector('.slide-generate-area');
+      const generateBtn = slideGenerateArea.querySelector('.generate-single-slide-btn');
+
+      // 保存されたstudentDataを取得
+      const studentDataStr = formDiv.getAttribute('data-saved-student-data');
+      if (!studentDataStr) {
+        alert('先に振り返りを保存してください');
+        return;
+      }
+      const studentData = JSON.parse(studentDataStr);
+
+      // 設定値を取得
+      const lessonTheme = slideSettingsSection.querySelector('.lesson-theme-input').value.trim();
+      const lessonDescription = slideSettingsSection.querySelector('.lesson-description-input').value.trim();
+      const targetAge = slideSettingsSection.querySelector('.target-age-input').value;
+      const lessonDuration = slideSettingsSection.querySelector('.lesson-duration-input').value;
+      const slideCount = slideSettingsSection.querySelector('.slide-count-input').value;
+      const lessonStyle = slideSettingsSection.querySelector('.lesson-style-input').value;
+
+      // テーマは必須
+      if (!lessonTheme) {
+        alert('レッスンのテーマを入力してください');
+        slideSettingsSection.querySelector('.lesson-theme-input').focus();
+        return;
+      }
+
+      const settings = {
+        lessonTheme: lessonTheme,
+        lessonDescription: lessonDescription,
+        targetAge: targetAge,
+        lessonDuration: lessonDuration,
+        slideCount: slideCount,
+        lessonStyle: lessonStyle
       };
 
-      const statusDiv = document.getElementById('generation-status');
-      statusDiv.textContent = '保存中...スライドを生成しています...';
-      document.getElementById('save-feedback-btn').disabled = true;
+      // ボタンを無効化
+      button.disabled = true;
+      statusDiv.innerHTML = '<p style="color: #667eea; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" class="spin-icon" style="width: 16px; height: 16px;"></i>AIでスライドデータを生成中...</p>';
+      lucide.createIcons();
+
+      // サーバー側でスライドデータを生成
+      google.script.run
+        .withSuccessHandler(function(result) {
+          console.log('スライドデータ生成完了:', result);
+
+          // 結果の検証
+          if (!result || !result.slideContent || !Array.isArray(result.slideContent)) {
+            statusDiv.innerHTML = '<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: スライドコンテンツの生成に失敗しました</p>';
+            lucide.createIcons();
+            console.error('Invalid result:', result);
+            button.disabled = false;
+            return;
+          }
+
+          statusDiv.innerHTML = '<p style="color: #10b981; display: flex; align-items: center; gap: 8px; font-weight: 600;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>スライドデータの生成完了！</p>';
+          lucide.createIcons();
+
+          // slideContentをボタンに保存
+          generateBtn.setAttribute('data-slide-content', JSON.stringify(result.slideContent));
+          generateBtn.setAttribute('data-student-data', JSON.stringify(studentData));
+
+          // プレビューを生成
+          let previewHTML = '<div style="font-family: monospace;">';
+          result.slideContent.forEach((slide, index) => {
+            const slideTitle = slide.title || `スライド${index + 1}`;
+            const slideType = slide.type || 'unknown';
+
+            previewHTML += `<div style="margin-bottom: 12px; padding: 8px; background: white; border-left: 3px solid #667eea; border-radius: 4px;">`;
+            previewHTML += `<strong style="color: #667eea;">${index + 1}. [${slideType}]</strong> ${slideTitle}`;
+
+            // コンテンツの一部を表示
+            if (slide.points && Array.isArray(slide.points)) {
+              previewHTML += '<div style="margin-left: 20px; margin-top: 4px; color: #6c757d; font-size: 13px;">';
+              slide.points.slice(0, 2).forEach(item => {
+                previewHTML += `• ${item}<br>`;
+              });
+              if (slide.points.length > 2) {
+                previewHTML += `... 他 ${slide.points.length - 2} 項目`;
+              }
+              previewHTML += '</div>';
+            } else if (slide.items && Array.isArray(slide.items)) {
+              previewHTML += '<div style="margin-left: 20px; margin-top: 4px; color: #6c757d; font-size: 13px;">';
+              const displayItems = slide.items.slice(0, 2);
+              displayItems.forEach(item => {
+                const itemText = typeof item === 'string' ? item : (item.title || item.label || JSON.stringify(item));
+                previewHTML += `• ${itemText}<br>`;
+              });
+              if (slide.items.length > 2) {
+                previewHTML += `... 他 ${slide.items.length - 2} 項目`;
+              }
+              previewHTML += '</div>';
+            }
+
+            previewHTML += '</div>';
+          });
+          previewHTML += '</div>';
+
+          slideStructurePreview.innerHTML = previewHTML;
+
+          // プレビューエリアを表示
+          aiPreviewArea.style.display = 'block';
+          aiPreviewArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+          // スライド生成ボタンを表示
+          setTimeout(() => {
+            slideGenerateArea.style.display = 'block';
+            slideGenerateArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 300);
+
+          button.disabled = false;
+        })
+        .withFailureHandler(function(error) {
+          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: ${error.message}</p>`;
+          lucide.createIcons();
+          button.disabled = false;
+        })
+        .generateSlideDataWithSettings(studentData, settings);
+    }
+
+    /**
+     * AI生成内容を再生成
+     */
+    function regenerateAIContent(button) {
+      const formDiv = button.closest('.student-form');
+      const statusDiv = formDiv.querySelector('.single-student-status');
+      const aiPreviewContent = formDiv.querySelector('.ai-preview-content');
+      const slideGenerateArea = formDiv.querySelector('.slide-generate-area');
+      const generateBtn = slideGenerateArea.querySelector('.generate-single-slide-btn');
+
+      // 編集されたプレビュー内容を取得
+      const editedPreview = aiPreviewContent.value;
+
+      if (!editedPreview || !editedPreview.trim()) {
+        alert('プレビュー内容が空です');
+        return;
+      }
+
+      // ボタンを無効化
+      button.disabled = true;
+      statusDiv.innerHTML = '<p style="color: #3498db;">🔄 再生成中...</p>';
+
+      // 編集された内容をパースしてslideContentに反映
+      // （簡易的にテキストを保持し、スライド生成時に使用）
+      // 実際のslideContent構造は保持しつつ、テキストのみ更新
+      const studentDataStr = generateBtn.getAttribute('data-student-data');
+
+      if (studentDataStr) {
+        const studentData = JSON.parse(studentDataStr);
+
+        // 編集内容を再度Geminiに投げてJSON化
+        google.script.run
+          .withSuccessHandler(function(result) {
+            console.log('AI再生成完了。結果:', result);
+
+            // 結果の検証
+            if (!result || !result.slideContent || !Array.isArray(result.slideContent)) {
+              statusDiv.innerHTML = '<p style="color: red;">エラー: スライドコンテンツの再生成に失敗しました</p>';
+              console.error('Invalid result:', result);
+              button.disabled = false;
+              return;
+            }
+
+            statusDiv.innerHTML = '<p style="color: green;">✓ 再生成完了！</p>';
+            showToast('AI内容を再生成しました');
+
+            // 新しいslideContentをボタンに保存
+            generateBtn.setAttribute('data-slide-content', JSON.stringify(result.slideContent));
+
+            // プレビューを更新（見やすくインデント）
+            // slideContentは配列形式
+            let previewText = `【レッスン報告スライド】\n\n`;
+
+            result.slideContent.forEach((slide, index) => {
+              // スライドタイトルを左インデント
+              const slideTitle = slide.title || `スライド${index + 1}`;
+              previewText += `  ${index + 1}. [${slide.type}] ${slideTitle}\n`;
+
+              // コンテンツを更に左インデント
+              if (slide.points && Array.isArray(slide.points)) {
+                slide.points.forEach(item => {
+                  previewText += `     • ${item}\n`;
+                });
+              } else if (slide.items && Array.isArray(slide.items)) {
+                slide.items.forEach(item => {
+                  const itemText = typeof item === 'string' ? item : (item.title || item.label || JSON.stringify(item));
+                  previewText += `     • ${itemText}\n`;
+                });
+              } else if (slide.steps && Array.isArray(slide.steps)) {
+                slide.steps.forEach((step, i) => {
+                  previewText += `     ${i + 1}. ${step}\n`;
+                });
+              }
+              previewText += '\n';
+            });
+
+            aiPreviewContent.value = previewText;
+            button.disabled = false;
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.innerHTML = `<p style="color: red;">エラー: ${error.message}</p>`;
+            button.disabled = false;
+          })
+          .saveSingleStudentFeedback(studentData);
+      } else {
+        statusDiv.innerHTML = '<p style="color: red;">生徒データが見つかりません</p>';
+        button.disabled = false;
+      }
+    }
+
+    /**
+     * 生徒1人分のスライドを生成
+     */
+    function generateSingleStudentSlide(button) {
+      const formDiv = button.closest('.student-form');
+      const statusDiv = formDiv.querySelector('.single-student-status');
+
+      // 保存されたデータを取得
+      const slideContentStr = button.getAttribute('data-slide-content');
+      const studentDataStr = button.getAttribute('data-student-data');
+
+      if (!slideContentStr || !studentDataStr) {
+        alert('スライドデータが取得できません。先に振り返りを保存してください。');
+        return;
+      }
+
+      const slideContent = JSON.parse(slideContentStr);
+      const studentData = JSON.parse(studentDataStr);
+
+      // ボタンを無効化
+      button.disabled = true;
+      statusDiv.innerHTML = '<p style="color: #f5576c; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" class="spin-icon" style="width: 18px; height: 18px;"></i>Googleスライドを作成中...</p>';
+      lucide.createIcons();
 
       google.script.run
         .withSuccessHandler(function(result) {
           statusDiv.innerHTML = `
-            <p style="color: green;">✓ 保存が完了しました！</p>
-            <p>スライドURL: <a href="${result.slideUrl}" target="_blank">${result.slideUrl}</a></p>
+            <div style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white;">
+              <p style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 600; font-size: 16px;">
+                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+                スライド生成完了！
+              </p>
+              <a href="${result.slideUrl}" target="_blank"
+                 style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: white; color: #f5576c; border-radius: 8px; font-weight: 700; text-decoration: none; transition: transform 0.2s;"
+                 onmouseover="this.style.transform='scale(1.05)'"
+                 onmouseout="this.style.transform='scale(1)'">
+                <i data-lucide="external-link" style="width: 18px; height: 18px;"></i>
+                スライドを開く
+              </a>
+            </div>
           `;
+          lucide.createIcons();
           showToast('スライドを生成しました！');
           setTimeout(() => {
-            document.getElementById('save-feedback-btn').disabled = false;
-          }, 3000);
+            button.disabled = false;
+          }, 2000);
         })
         .withFailureHandler(function(error) {
-          statusDiv.innerHTML = `<p style="color: red;">エラー: ${error.message}</p>`;
-          document.getElementById('save-feedback-btn').disabled = false;
+          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>エラー: ${error.message}</p>`;
+          lucide.createIcons();
+          button.disabled = false;
         })
-        .saveFeedbackAndGenerateSlide(data);
+        .generateSingleStudentSlide(slideContent, studentData);
     }
 
     // ========================================

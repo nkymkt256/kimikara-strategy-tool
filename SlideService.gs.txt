@@ -1,115 +1,2678 @@
 // SlideService.gs
-// Google Slides 関連のユーティリティ
+// Google Apps Script SDKを使用したスライド生成サービス
+// 実装計画書から抽出した完全な17種類のスライドタイプ実装
 
-const SlideService = (function() {
+var SlideService = (function() {
+  'use strict';
 
-  /**
-   * レッスンスライドを作成
-   */
-  function createLessonSlide(slideContent, feedbackData) {
-    try {
-      // 新しいプレゼンテーションを作成
-      const presentation = Slides.Presentations.create({
-        title: slideContent.title || 'レッスンスライド'
-      });
+  // ========================================
+  // 1. CONFIG設定（完全版）
+  // ========================================
 
-      const presentationId = presentation.presentationId;
-
-      // スライドを追加
-      addSlidesToPresentation(presentationId, slideContent.slides);
-
-      // 指定フォルダに移動
-      if (SETTINGS.DRIVE.SLIDES_FOLDER_ID) {
-        moveToFolder(presentationId, SETTINGS.DRIVE.SLIDES_FOLDER_ID);
+  var CONFIG = {
+    BASE_PX: {
+      W: 960,
+      H: 540
+    },
+    COLORS: {
+      primary_color: '#00bcfe',
+      accent_color: '#ff6b35',
+      background_white: '#ffffff',
+      background_gray: '#f5f5f5',
+      ghost_gray: '#cccccc',
+      faint_gray: '#e0e0e0',
+      text_primary: '#333333',
+      process_arrow: '#999999',
+      table_header_bg: '#f0f0f0',
+      lane_border: '#d0d0d0',
+      card_border: '#d0d0d0',
+      neutral_gray: '#888888'
+    },
+    FONTS: {
+      family: 'Noto Sans JP',
+      sizes: {
+        title: 32,
+        sectionTitle: 36,
+        date: 16,
+        subhead: 14,
+        body: 16,
+        processStep: 16,
+        footer: 10,
+        ghostNum: 200,
+        laneTitle: 14,
+        contentTitle: 24
       }
+    },
+    // Diagram slide用の設定
+    DIAGRAM: {
+      laneGap_px: 20,
+      lanePad_px: 12,
+      laneTitle_h_px: 32,
+      cardGap_px: 12,
+      cardMin_h_px: 60,
+      cardMax_h_px: 100,
+      arrow_h_px: 20,
+      arrowGap_px: 8
+    },
+    POS_PX: {
+      titleSlide: {
+        logo: { left: 40, top: 40, width: 120, height: 40 },
+        title: { left: 80, top: 200, width: 800, height: 100 },
+        date: { left: 80, top: 320, width: 800, height: 40 }
+      },
+      sectionSlide: {
+        ghostNum: { left: 600, top: 100, width: 300, height: 300 },
+        title: { left: 80, top: 230, width: 800, height: 80 }
+      },
+      contentSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        body: { left: 60, top: 120, width: 840, height: 360 },
+        twoColLeft: { left: 60, top: 120, width: 400, height: 360 },
+        twoColRight: { left: 480, top: 120, width: 400, height: 360 }
+      },
+      compareSlide: {
+        leftBox: { left: 60, top: 120, width: 400, height: 360 },
+        rightBox: { left: 480, top: 120, width: 400, height: 360 }
+      },
+      processSlide: {
+        area: { left: 100, top: 120, width: 760, height: 360 }
+      },
+      timelineSlide: {
+        area: { left: 60, top: 120, width: 840, height: 360 }
+      },
+      diagramSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        lanesArea: { left: 60, top: 120, width: 840, height: 360 }
+      },
+      cardsSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        gridArea: { left: 60, top: 120, width: 840, height: 360 }
+      },
+      tableSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        area: { left: 60, top: 120, width: 840, height: 360 }
+      },
+      progressSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        area: { left: 100, top: 120, width: 760, height: 360 }
+      },
+      kpiSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        gridArea: { left: 100, top: 120, width: 760, height: 360 }
+      },
+      triangleSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        area: { left: 180, top: 120, width: 600, height: 360 }
+      },
+      pyramidSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        pyramidArea: { left: 180, top: 120, width: 600, height: 360 }
+      },
+      flowChartSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        singleRow: { left: 60, top: 120, width: 840, height: 360 },
+        upperRow: { left: 60, top: 120, width: 840, height: 160 },
+        lowerRow: { left: 60, top: 300, width: 840, height: 160 }
+      },
+      stepUpSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        stepArea: { left: 60, top: 120, width: 840, height: 360 }
+      },
+      imageTextSlide: {
+        title: { left: 60, top: 30, width: 840, height: 50 },
+        subhead: { left: 60, top: 90, width: 840, height: 30 },
+        leftImage: { left: 60, top: 120, width: 400, height: 360 },
+        rightText: { left: 480, top: 120, width: 400, height: 360 }
+      },
+      footer: {
+        rightPage: { left: 860, top: 500, width: 60, height: 20 }
+      },
+      bottomBar: {
+        left: 0,
+        top: 520,
+        width: 960,
+        height: 20
+      }
+    },
+    BACKGROUND_IMAGES: {
+      title: '',
+      section: '',
+      main: '',
+      closing: ''
+    },
+    LOGOS: {
+      header: null,
+      closing: null
+    },
+    LOGO_BLOBS: {
+      header: null,
+      closing: null
+    },
+    ENABLE_SPEAKER_NOTES: false,
+    DIAGRAM: {
+      laneGap_px: 20,
+      lanePad_px: 12,
+      laneTitle_h_px: 40,
+      cardGap_px: 10,
+      cardMin_h_px: 60,
+      cardMax_h_px: 120,
+      arrow_h_px: 20,
+      arrowGap_px: 10
+    }
+  };
 
-      return `https://docs.google.com/presentation/d/${presentationId}/edit`;
+  var __SLIDE_DATA_FOR_AGENDA = [];
+
+  // ========================================
+  // 2. カラーユーティリティ関数
+  // ========================================
+
+  function hexToRgb(hex) {
+    if (!hex) return null;
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  function lightenColor(color, amount) {
+    var rgb = hexToRgb(color);
+    if (!rgb) return color;
+    var lighten = function(c) { return Math.min(255, Math.round(c + (255 - c) * amount)); };
+    var newR = lighten(rgb.r);
+    var newG = lighten(rgb.g);
+    var newB = lighten(rgb.b);
+    return '#' + newR.toString(16).padStart(2, '0') + newG.toString(16).padStart(2, '0') + newB.toString(16).padStart(2, '0');
+  }
+
+  function darkenColor(color, amount) {
+    var rgb = hexToRgb(color);
+    if (!rgb) return color;
+    var darken = function(c) { return Math.max(0, Math.round(c * (1 - amount))); };
+    var newR = darken(rgb.r);
+    var newG = darken(rgb.g);
+    var newB = darken(rgb.b);
+    return '#' + newR.toString(16).padStart(2, '0') + newG.toString(16).padStart(2, '0') + newB.toString(16).padStart(2, '0');
+  }
+
+  function generateStepUpColors(baseColor, steps) {
+    var colors = [];
+    for (var i = 0; i < steps; i++) {
+      var lightenAmount = 0.6 * (1 - (i / Math.max(1, steps - 1)));
+      colors.push(lightenColor(baseColor, lightenAmount));
+    }
+    return colors;
+  }
+
+  function generateProcessColors(baseColor, steps) {
+    var colors = [];
+    for (var i = 0; i < steps; i++) {
+      var lightenAmount = 0.5 * (1 - (i / Math.max(1, steps - 1)));
+      colors.push(lightenColor(baseColor, lightenAmount));
+    }
+    return colors;
+  }
+
+  function generateTimelineCardColors(baseColor, milestones) {
+    var colors = [];
+    for (var i = 0; i < milestones; i++) {
+      var lightenAmount = 0.4 * (1 - (i / Math.max(1, milestones - 1)));
+      colors.push(lightenColor(baseColor, lightenAmount));
+    }
+    return colors;
+  }
+
+  function generateCompareColors(baseColor) {
+    return {
+      left: darkenColor(baseColor, 0.3),
+      right: baseColor
+    };
+  }
+
+  function generateTintedGray(primaryColor, saturation, lightness) {
+    var rgb = hexToRgb(primaryColor);
+    if (!rgb) return '#' + lightness.toString(16).padStart(2, '0').repeat(3);
+
+    var r = Math.round(rgb.r * (saturation / 100) + (lightness * 255 / 100) * (1 - saturation / 100));
+    var g = Math.round(rgb.g * (saturation / 100) + (lightness * 255 / 100) * (1 - saturation / 100));
+    var b = Math.round(rgb.b * (saturation / 100) + (lightness * 255 / 100) * (1 - saturation / 100));
+
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+
+    return '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
+  }
+
+  // ========================================
+  // 3. レイアウトマネージャー
+  // ========================================
+
+  function createLayoutManager(pageW_pt, pageH_pt) {
+    var pxToPt = function(px) { return px * 0.75; };
+    var baseW_pt = pxToPt(CONFIG.BASE_PX.W);
+    var baseH_pt = pxToPt(CONFIG.BASE_PX.H);
+    var scaleX = pageW_pt / baseW_pt;
+    var scaleY = pageH_pt / baseH_pt;
+
+    var getPositionFromPath = function(path) {
+      return path.split('.').reduce(function(obj, key) { return obj[key]; }, CONFIG.POS_PX);
+    };
+
+    return {
+      scaleX: scaleX,
+      scaleY: scaleY,
+      pageW_pt: pageW_pt,
+      pageH_pt: pageH_pt,
+      pxToPt: pxToPt,
+      getRect: function(spec) {
+        var pos = typeof spec === 'string' ? getPositionFromPath(spec) : spec;
+        var left_px = pos.left;
+
+        if (pos.right !== undefined && pos.left === undefined) {
+          left_px = CONFIG.BASE_PX.W - pos.right - pos.width;
+        }
+
+        if (left_px === undefined && pos.right === undefined) {
+          left_px = 0;
+        }
+
+        return {
+          left: left_px !== undefined ? pxToPt(left_px) * scaleX : 0,
+          top: pos.top !== undefined ? pxToPt(pos.top) * scaleY : 0,
+          width: pos.width !== undefined ? pxToPt(pos.width) * scaleX : 0,
+          height: pos.height !== undefined ? pxToPt(pos.height) * scaleY : 0
+        };
+      }
+    };
+  }
+
+  function offsetRect(rect, dx, dy) {
+    return {
+      left: rect.left + dx,
+      top: rect.top + dy,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  function safeGetRect(layout, key) {
+    try {
+      return layout.getRect(key);
     } catch (e) {
-      throw new Error('スライド作成エラー: ' + e.message);
+      Logger.log('safeGetRect: key "' + key + '" not found');
+      return null;
     }
   }
 
-  /**
-   * プレゼンテーションにスライドを追加
-   */
-  function addSlidesToPresentation(presentationId, slidesData) {
-    const requests = [];
+  // ========================================
+  // 4. テキストスタイリング関数
+  // ========================================
 
-    slidesData.forEach((slide, index) => {
-      // スライドを作成（タイトルとボディのレイアウト）
-      const slideId = `slide_${index}`;
+  function parseInlineStyles(s) {
+    var ranges = [];
+    var out = '';
+    var i = 0;
 
-      requests.push({
-        createSlide: {
-          objectId: slideId,
-          slideLayoutReference: {
-            predefinedLayout: 'TITLE_AND_BODY'
+    while (i < s.length) {
+      // **{{}} 記法を優先的に処理（アクセントカラー + 太字）
+      if (s[i] === '*' && s[i + 1] === '*' && s[i + 2] === '{' && s[i + 3] === '{') {
+        var contentStart = i + 4;
+        var close = s.indexOf('}}**', contentStart);
+        if (close !== -1) {
+          var content = s.substring(contentStart, close);
+          var start = out.length;
+          out += content;
+          var end = out.length;
+          ranges.push({
+            start: start,
+            end: end,
+            bold: true,
+            color: CONFIG.COLORS.accent_color
+          });
+          i = close + 4;
+          continue;
+        }
+      }
+
+      // {{}} 記法の処理（アクセントカラー + 太字）
+      if (s[i] === '{' && s[i + 1] === '{') {
+        var close = s.indexOf('}}', i + 2);
+        if (close !== -1) {
+          var content = s.substring(i + 2, close);
+          var start = out.length;
+          out += content;
+          var end = out.length;
+          ranges.push({
+            start: start,
+            end: end,
+            bold: true,
+            color: CONFIG.COLORS.accent_color
+          });
+          i = close + 2;
+          continue;
+        }
+      }
+
+      // **[[]] 記法を優先的に処理（メインカラー + 太字）
+      if (s[i] === '*' && s[i + 1] === '*' && s[i + 2] === '[' && s[i + 3] === '[') {
+        var contentStart = i + 4;
+        var close = s.indexOf(']]**', contentStart);
+        if (close !== -1) {
+          var content = s.substring(contentStart, close);
+          var start = out.length;
+          out += content;
+          var end = out.length;
+          ranges.push({
+            start: start,
+            end: end,
+            bold: true,
+            color: CONFIG.COLORS.primary_color
+          });
+          i = close + 4;
+          continue;
+        }
+      }
+
+      // [[]] 記法の処理（メインカラー + 太字）
+      if (s[i] === '[' && s[i + 1] === '[') {
+        var close = s.indexOf(']]', i + 2);
+        if (close !== -1) {
+          var content = s.substring(i + 2, close);
+          var start = out.length;
+          out += content;
+          var end = out.length;
+          ranges.push({
+            start: start,
+            end: end,
+            bold: true,
+            color: CONFIG.COLORS.primary_color
+          });
+          i = close + 2;
+          continue;
+        }
+      }
+
+      // ** 記法の処理（太字のみ）
+      if (s[i] === '*' && s[i + 1] === '*') {
+        var close = s.indexOf('**', i + 2);
+        if (close !== -1) {
+          var content = s.substring(i + 2, close);
+          if (content.indexOf('[[') === -1 && content.indexOf('{{') === -1) {
+            var start = out.length;
+            out += content;
+            var end = out.length;
+            ranges.push({
+              start: start,
+              end: end,
+              bold: true
+            });
+            i = close + 2;
+            continue;
+          } else {
+            i += 2;
+            continue;
           }
         }
-      });
+      }
 
-      // タイトルとコンテンツを追加
-      requests.push({
-        insertText: {
-          objectId: slideId,
-          text: slide.title,
-          insertionIndex: 0
-        }
-      });
+      out += s[i];
+      i++;
+    }
 
-      requests.push({
-        insertText: {
-          objectId: slideId,
-          text: formatSlideContent(slide.content),
-          insertionIndex: 0
+    return {
+      output: out,
+      ranges: ranges
+    };
+  }
+
+  function applyTextStyle(textRange, opt) {
+    var style = textRange.getTextStyle();
+    style.setFontFamily(CONFIG.FONTS.family)
+      .setForegroundColor(opt.color || CONFIG.COLORS.text_primary)
+      .setFontSize(opt.size || CONFIG.FONTS.sizes.body)
+      .setBold(opt.bold || false);
+
+    if (opt.align) {
+      try {
+        textRange.getParagraphs().forEach(function(p) {
+          p.getRange().getParagraphStyle().setParagraphAlignment(opt.align);
+        });
+      } catch (e) {}
+    }
+  }
+
+  function applyStyleRanges(textRange, ranges, backgroundColor, primaryColor) {
+    ranges.forEach(function(r) {
+      try {
+        var sub = textRange.getRange(r.start, r.end);
+        if (!sub) return;
+        var st = sub.getTextStyle();
+        if (r.bold) st.setBold(true);
+
+        if (r.color) {
+          var finalColor = r.color;
+          if (backgroundColor && primaryColor) {
+            var bgColorLower = backgroundColor.toLowerCase();
+            var primaryColorLower = primaryColor.toLowerCase();
+            if (bgColorLower === primaryColorLower) {
+              finalColor = CONFIG.COLORS.background_white;
+            }
+          }
+          st.setForegroundColor(finalColor);
         }
+      } catch (e) {}
+    });
+  }
+
+  function setStyledText(shapeOrCell, rawText, baseOpt, backgroundColor, primaryColor) {
+    var parsed = parseInlineStyles(rawText || '');
+    var tr = shapeOrCell.getText().setText(parsed.output);
+    applyTextStyle(tr, baseOpt || {});
+    applyStyleRanges(tr, parsed.ranges, backgroundColor, primaryColor);
+  }
+
+  function cleanSpeakerNotes(notesText) {
+    if (!notesText) return '';
+    var cleaned = notesText;
+    cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
+    cleaned = cleaned.replace(/\[\[([^\]]+)\]\]/g, '$1');
+    cleaned = cleaned.replace(/\{\{([^}]+)\}\}/g, '$1');
+    cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
+    cleaned = cleaned.replace(/_([^_]+)_/g, '$1');
+    cleaned = cleaned.replace(/~~([^~]+)~~/g, '$1');
+    cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+    return cleaned;
+  }
+
+  function setBulletsWithInlineStyles(shape, points) {
+    var joiner = '\n\n';
+    var combined = '';
+    var ranges = [];
+    (points || []).forEach(function(pt, idx) {
+      var parsed = parseInlineStyles(String(pt || ''));
+      var bullet = parsed.output;
+      if (idx > 0) combined += joiner;
+      var start = combined.length;
+      combined += bullet;
+      parsed.ranges.forEach(function(r) {
+        ranges.push({
+          start: start + r.start,
+          end: start + r.end,
+          bold: r.bold,
+          color: r.color
+        });
+      });
+    });
+    var tr = shape.getText().setText(combined || '—');
+    applyTextStyle(tr, {
+      size: CONFIG.FONTS.sizes.body
+    });
+    try {
+      tr.getParagraphs().forEach(function(p) {
+        p.getRange().getParagraphStyle().setLineSpacing(100).setSpaceBelow(6);
+      });
+    } catch (e) {}
+    applyStyleRanges(tr, ranges);
+  }
+
+  // ========================================
+  // 5. ヘルパー関数（ボトムバー、フッター等）
+  // ========================================
+
+  function drawBottomBar(slide, layout, settings) {
+    var barRect = layout.getRect('bottomBar');
+    var bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, barRect.left, barRect.top, barRect.width, barRect.height);
+
+    if (settings.enableGradient && settings.gradientStart && settings.gradientEnd) {
+      try {
+        bar.getFill().setSolidFill(settings.gradientStart);
+      } catch (e) {
+        bar.getFill().setSolidFill(settings.primaryColor || CONFIG.COLORS.primary_color);
+      }
+    } else {
+      bar.getFill().setSolidFill(settings.primaryColor || CONFIG.COLORS.primary_color);
+    }
+
+    bar.getBorder().setTransparent();
+  }
+
+  function addCucFooter(slide, layout, pageNum, settings) {
+    if (pageNum > 0) {
+      var rightRect = layout.getRect('footer.rightPage');
+      var rightShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rightRect.left, rightRect.top, rightRect.width, rightRect.height);
+      rightShape.getText().setText(String(pageNum));
+      applyTextStyle(rightShape.getText(), {
+        size: CONFIG.FONTS.sizes.footer,
+        color: CONFIG.COLORS.primary_color,
+        align: SlidesApp.ParagraphAlignment.END
+      });
+    }
+  }
+
+  function drawBottomBarAndFooter(slide, layout, pageNum, settings) {
+    if (settings.showBottomBar) {
+      drawBottomBar(slide, layout, settings);
+    }
+    addCucFooter(slide, layout, pageNum, settings);
+  }
+
+  function drawStandardTitleHeader(slide, layout, key, title, settings) {
+    var titleRect = safeGetRect(layout, key + '.title');
+    if (!titleRect) return;
+
+    var fontSize = CONFIG.FONTS.sizes.contentTitle;
+    var titleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, titleRect.left, titleRect.top, titleRect.width, titleRect.height);
+    setStyledText(titleShape, title || '', {
+      size: fontSize,
+      bold: true
+    });
+
+    try {
+      titleShape.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+    } catch (e) {}
+  }
+
+  function drawSubheadIfAny(slide, layout, key, subhead) {
+    if (!subhead) return 0;
+
+    var rect = safeGetRect(layout, key + '.subhead');
+    if (!rect) return 0;
+
+    var box = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rect.left, rect.top, rect.width, rect.height);
+    setStyledText(box, subhead, {
+      size: CONFIG.FONTS.sizes.subhead,
+      color: CONFIG.COLORS.text_primary
+    });
+
+    return layout.pxToPt(36);
+  }
+
+  function adjustAreaForSubhead(area, subhead, layout) {
+    return area;
+  }
+
+  function createContentCushion(slide, area, settings, layout) {
+    if (!area || !area.width || !area.height || area.width <= 0 || area.height <= 0) {
+      return;
+    }
+    var cushionColor = CONFIG.COLORS.background_gray;
+    var cushion = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, area.left, area.top, area.width, area.height);
+    cushion.getFill().setSolidFill(cushionColor, 0.50);
+    cushion.getBorder().setTransparent();
+  }
+
+  function setMainSlideBackground(slide, layout) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+  }
+
+  function drawArrowBetweenRects(slide, a, b, arrowH, arrowGap, settings) {
+    var fromX = a.left + a.width;
+    var fromY = a.top + a.height / 2;
+    var toX = b.left;
+    var toY = b.top + b.height / 2;
+    if (toX - fromX <= 0) return;
+    var line = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, fromX, fromY, toX, toY);
+    line.getLineFill().setSolidFill(settings.primaryColor);
+    line.setWeight(1.5);
+    line.setEndArrow(SlidesApp.ArrowStyle.FILL_ARROW);
+  }
+
+  function setBulletsWithInlineStyles(shape, points) {
+    var joiner = '\n\n';
+    var combined = '';
+    var ranges = [];
+    (points || []).forEach(function(pt, idx) {
+      var parsed = parseInlineStyles(String(pt || ''));
+      var bullet = parsed.output;
+      if (idx > 0) combined += joiner;
+      var start = combined.length;
+      combined += bullet;
+      parsed.ranges.forEach(function(r) {
+        ranges.push({
+          start: start + r.start,
+          end: start + r.end,
+          bold: r.bold,
+          color: r.color
+        });
+      });
+    });
+    var tr = shape.getText().setText(combined || '—');
+    applyTextStyle(tr, { size: CONFIG.FONTS.sizes.body });
+    try {
+      tr.getParagraphs().forEach(function(p) {
+        p.getRange().getParagraphStyle().setLineSpacing(100).setSpaceBelow(6);
+      });
+    } catch (e) {}
+    applyStyleRanges(tr, ranges);
+  }
+
+  function isAgendaTitle(title) {
+    return /(agenda|アジェンダ|目次|本日お伝えすること)/i.test(String(title || ''));
+  }
+
+  function buildAgendaFromSlideData() {
+    return __SLIDE_DATA_FOR_AGENDA.filter(function(d) {
+      return d && d.type === 'section' && d.title;
+    }).map(function(d) {
+      return d.title.trim();
+    });
+  }
+
+  function parseNumericValue(str) {
+    if (typeof str !== 'string') return 0;
+    var match = str.match(/(\d+(\.\d+)?)/);
+    return match ? parseFloat(match[1]) : 0;
+  }
+
+  function insertTrendIcon(slide, position, trend, settings) {
+    var iconSize = 20;
+    var icon = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, position.left, position.top - iconSize/2, iconSize, iconSize);
+    var iconText = '';
+    var iconColor = CONFIG.COLORS.text_primary;
+    switch (trend) {
+      case 'up':
+        iconText = '↑';
+        iconColor = CONFIG.COLORS.success_green;
+        break;
+      case 'down':
+        iconText = '↓';
+        iconColor = CONFIG.COLORS.error_red;
+        break;
+      case 'neutral':
+        iconText = '→';
+        iconColor = CONFIG.COLORS.neutral_gray;
+        break;
+      default:
+        iconText = '→';
+        iconColor = CONFIG.COLORS.neutral_gray;
+    }
+    setStyledText(icon, iconText, {
+      size: 16,
+      bold: true,
+      color: iconColor,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+    try {
+      icon.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+    return icon;
+  }
+
+  function smartFormatTriangleText(text) {
+    if (!text || text.length <= 30) {
+      return { text: text, isSimple: true, headerLength: 0 };
+    }
+    var separators = [
+      { pattern: '：', priority: 1 },
+      { pattern: ':', priority: 2 },
+      { pattern: '。', priority: 3 },
+      { pattern: 'について', priority: 4, keepSeparator: true },
+      { pattern: 'における', priority: 5, keepSeparator: true }
+    ];
+    for (var s = 0; s < separators.length; s++) {
+      var sep = separators[s];
+      var index = text.indexOf(sep.pattern);
+      if (index > 5 && index < text.length * 0.6) {
+        var headerEnd = sep.keepSeparator ? index + sep.pattern.length : index;
+        var header = text.substring(0, headerEnd).trim();
+        var body = text.substring(index + sep.pattern.length).trim();
+        if (header.length >= 3 && body.length >= 3) {
+          return {
+            text: header + '\n' + body,
+            isSimple: false,
+            headerLength: header.length
+          };
+        }
+      }
+    }
+    if (text.length > 50) {
+      var midPoint = Math.floor(text.length * 0.4);
+      var header = text.substring(0, midPoint).trim();
+      var body = text.substring(midPoint).trim();
+      return {
+        text: header + '\n' + body,
+        isSimple: false,
+        headerLength: header.length
+      };
+    }
+    return { text: text, isSimple: true, headerLength: 0 };
+  }
+
+  function adjustAreaForSubhead(area, subhead, layout) {
+    return area;
+  }
+
+  function createContentCushion(slide, area, settings, layout) {
+    if (!area || !area.width || !area.height || area.width <= 0 || area.height <= 0) {
+      return;
+    }
+
+    var cushionColor = CONFIG.COLORS.background_gray;
+    var cushion = slide.insertShape(SlidesApp.ShapeType.RECTANGLE,
+      area.left, area.top, area.width, area.height);
+
+    cushion.getFill().setSolidFill(cushionColor, 0.50);
+    var border = cushion.getBorder();
+    border.setTransparent();
+    cushion.sendToBack();
+  }
+
+  function setMainSlideBackground(slide, layout) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+  }
+
+  function drawArrowBetweenRects(slide, a, b, arrowH, arrowGap, settings) {
+    var fromX = a.left + a.width;
+    var fromY = a.top + a.height / 2;
+    var toX = b.left;
+    var toY = b.top + b.height / 2;
+
+    if (toX - fromX <= 0) return;
+
+    var line = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, fromX, fromY, toX, toY);
+    line.getLineFill().setSolidFill(settings.primaryColor);
+    line.setWeight(1.5);
+    line.setEndArrow(SlidesApp.ArrowStyle.FILL_ARROW);
+  }
+
+  function drawCompareBox(slide, layout, rect, title, items, settings, isLeft) {
+    var box = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rect.left, rect.top, rect.width, rect.height);
+    box.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+    box.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.lane_border);
+    var th = layout.pxToPt(40);
+    var titleBarBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rect.left, rect.top, rect.width, th);
+
+    var compareColors = generateCompareColors(settings.primaryColor);
+    var headerColor = isLeft ? compareColors.left : compareColors.right;
+    titleBarBg.getFill().setSolidFill(headerColor);
+    titleBarBg.getBorder().setTransparent();
+    var titleTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rect.left, rect.top, rect.width, th);
+    titleTextShape.getFill().setTransparent();
+    titleTextShape.getBorder().setTransparent();
+    setStyledText(titleTextShape, title, {
+      size: CONFIG.FONTS.sizes.laneTitle,
+      bold: true,
+      color: CONFIG.COLORS.background_white,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+    var pad = layout.pxToPt(12);
+    var body = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rect.left + pad, rect.top + th + pad, rect.width - pad * 2, rect.height - th - pad * 2);
+    setBulletsWithInlineStyles(body, items);
+  }
+
+  function drawNumberedItems(slide, layout, area, items, settings) {
+    createContentCushion(slide, area, settings, layout);
+
+    var n = Math.max(1, items.length);
+    var topPadding = layout.pxToPt(30);
+    var bottomPadding = layout.pxToPt(10);
+    var drawableHeight = area.height - topPadding - bottomPadding;
+    var gapY = drawableHeight / Math.max(1, n - 1);
+    var cx = area.left + layout.pxToPt(44);
+    var top0 = area.top + topPadding;
+
+    var line = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - layout.pxToPt(1), top0 + layout.pxToPt(6), layout.pxToPt(2), gapY * (n - 1));
+    line.getFill().setSolidFill(CONFIG.COLORS.faint_gray);
+    line.getBorder().setTransparent();
+
+    for (var i = 0; i < n; i++) {
+      var cy = top0 + gapY * i;
+      var sz = layout.pxToPt(28);
+      var numBox = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cx - sz/2, cy - sz/2, sz, sz);
+      numBox.getFill().setSolidFill(settings.primaryColor);
+      numBox.getBorder().setTransparent();
+      var num = numBox.getText();
+      num.setText(String(i + 1));
+      applyTextStyle(num, { size: 12, bold: true, color: CONFIG.COLORS.background_white, align: SlidesApp.ParagraphAlignment.CENTER });
+
+      var cleanText = String(items[i] || '');
+      cleanText = cleanText.replace(/^\s*\d+[\.\s]*/, '');
+
+      var txt = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cx + layout.pxToPt(28), cy - layout.pxToPt(16), area.width - layout.pxToPt(70), layout.pxToPt(32));
+      setStyledText(txt, cleanText, { size: CONFIG.FONTS.sizes.processStep });
+      try { txt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch(e){}
+    }
+  }
+
+  // ========================================
+  // 6. スライド生成のメイン関数
+  // ========================================
+
+  function createPresentation(slideData, settings) {
+    // 動的カラーの更新
+    var primary = settings.primaryColor || CONFIG.COLORS.primary_color;
+    CONFIG.COLORS.primary_color = primary;
+    CONFIG.COLORS.accent_color = settings.accentColor || CONFIG.COLORS.accent_color;
+    CONFIG.COLORS.background_gray = generateTintedGray(primary, 10, 98);
+    CONFIG.COLORS.faint_gray = generateTintedGray(primary, 10, 93);
+    CONFIG.COLORS.ghost_gray = generateTintedGray(primary, 38, 88);
+    CONFIG.COLORS.table_header_bg = generateTintedGray(primary, 20, 94);
+    CONFIG.COLORS.lane_border = generateTintedGray(primary, 15, 85);
+    CONFIG.COLORS.card_border = generateTintedGray(primary, 15, 85);
+    CONFIG.COLORS.neutral_gray = generateTintedGray(primary, 5, 62);
+    CONFIG.COLORS.process_arrow = CONFIG.COLORS.ghost_gray;
+
+    CONFIG.FONTS.family = settings.fontFamily || CONFIG.FONTS.family;
+    CONFIG.ENABLE_SPEAKER_NOTES = settings.enableSpeakerNotes || false;
+
+    // プレゼンテーション作成
+    var today = Utilities.formatDate(new Date(), 'JST', 'yyyy年MM月dd日');
+    var rawTitle = (slideData[0] && slideData[0].type === 'title' ? String(slideData[0].title || '') : 'レッスン');
+    var singleLineTitle = rawTitle.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+    var finalName = singleLineTitle + ' ' + today;
+
+    var presentation = SlidesApp.create(finalName);
+    presentation.getSlides()[0].remove();
+
+    var layout = createLayoutManager(presentation.getPageWidth(), presentation.getPageHeight());
+    var pageCounter = 0;
+
+    for (var i = 0; i < slideData.length; i++) {
+      var data = slideData[i];
+      try {
+        var generator = slideGenerators[data.type];
+        if (data.type !== 'title' && data.type !== 'closing') {
+          pageCounter++;
+        }
+        if (generator) {
+          var slide = presentation.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+          generator(slide, data, layout, pageCounter, settings);
+
+          if (CONFIG.ENABLE_SPEAKER_NOTES && data.notes) {
+            var cleanedNotes = cleanSpeakerNotes(data.notes);
+            slide.getNotesPage().getSpeakerNotesShape().getText().setText(cleanedNotes);
+          }
+        }
+      } catch (e) {
+        Logger.log('スライド' + i + '生成エラー (type: ' + data.type + '): ' + e.message);
+      }
+    }
+
+    return presentation.getUrl();
+  }
+
+  // ========================================
+  // 7. スライドジェネレーター定義
+  // ========================================
+
+  var slideGenerators = {
+    title: createTitleSlide,
+    section: createSectionSlide,
+    closing: createClosingSlide,
+    content: createContentSlide,
+    agenda: createAgendaSlide,
+    compare: createCompareSlide,
+    process: createProcessSlide,
+    processList: createProcessListSlide,
+    timeline: createTimelineSlide,
+    diagram: createDiagramSlide,
+    cycle: createCycleSlide,
+    cards: createCardsSlide,
+    headerCards: createHeaderCardsSlide,
+    table: createTableSlide,
+    progress: createProgressSlide,
+    quote: createQuoteSlide,
+    kpi: createKpiSlide,
+    bulletCards: createBulletCardsSlide,
+    faq: createFaqSlide,
+    statsCompare: createStatsCompareSlide,
+    barCompare: createBarCompareSlide,
+    triangle: createTriangleSlide,
+    pyramid: createPyramidSlide,
+    flowChart: createFlowChartSlide,
+    stepUp: createStepUpSlide,
+    imageText: createImageTextSlide
+  };
+
+  // ========================================
+  // 8. スライド生成関数（基本スライド）
+  // ========================================
+
+  var __SECTION_COUNTER = 0;
+
+  function createTitleSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    var titleRect = layout.getRect('titleSlide.title');
+    var titleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, titleRect.left, titleRect.top, titleRect.width, titleRect.height);
+    setStyledText(titleShape, data.title, {
+      size: CONFIG.FONTS.sizes.title,
+      bold: true,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+
+    if (data.date) {
+      var dateRect = layout.getRect('titleSlide.date');
+      var dateShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, dateRect.left, dateRect.top, dateRect.width, dateRect.height);
+      dateShape.getText().setText(data.date);
+      applyTextStyle(dateShape.getText(), {
+        size: CONFIG.FONTS.sizes.date,
+        color: CONFIG.COLORS.accent_color,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+    }
+  }
+
+  function createSectionSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_gray);
+    __SECTION_COUNTER++;
+
+    var parsedNum = (function() {
+      if (typeof data.sectionNo === 'number' && !isNaN(data.sectionNo)) {
+        return Number(data.sectionNo);
+      }
+      var m = String(data.title || '').match(/^\s*(\d+)[\.．]/);
+      return m ? Number(m[1]) : __SECTION_COUNTER;
+    })();
+
+    var num = String(parsedNum).padStart(2, '0');
+
+    var ghostRect = layout.getRect('sectionSlide.ghostNum');
+    var ghost = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ghostRect.left, ghostRect.top, ghostRect.width, ghostRect.height);
+
+    ghost.getText().setText(num);
+    var ghostTextStyle = ghost.getText().getTextStyle();
+    ghostTextStyle.setFontFamily(CONFIG.FONTS.family)
+      .setFontSize(CONFIG.FONTS.sizes.ghostNum)
+      .setBold(true);
+
+    try {
+      ghostTextStyle.setForegroundColorWithAlpha(CONFIG.COLORS.ghost_gray, 0.15);
+    } catch (e) {
+      ghostTextStyle.setForegroundColor(CONFIG.COLORS.ghost_gray);
+    }
+
+    try {
+      ghost.getText().getParagraphs()[0].getRange().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+      ghost.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+
+    var titleRect = layout.getRect('sectionSlide.title');
+    var titleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, titleRect.left, titleRect.top, titleRect.width, titleRect.height);
+    try {
+      titleShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+
+    setStyledText(titleShape, data.title, {
+      size: CONFIG.FONTS.sizes.sectionTitle,
+      bold: true,
+      color: CONFIG.COLORS.accent_color,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+
+    addCucFooter(slide, layout, pageNum, settings);
+  }
+
+  function createClosingSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    var titleRect = layout.getRect('sectionSlide.title');
+    var closingShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, titleRect.left, titleRect.top, titleRect.width, titleRect.height);
+    closingShape.getText().setText('ありがとうございました');
+    try {
+      closingShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+    applyTextStyle(closingShape.getText(), {
+      size: CONFIG.FONTS.sizes.sectionTitle,
+      bold: true,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+  }
+
+  // ========================================
+  // 9. スライド生成関数（コンテンツスライド）
+  // ========================================
+
+  function createContentSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+
+    if (data.subhead) {
+      drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    }
+
+    var points = Array.isArray(data.points) ? data.points : [];
+    var isTwo = !!(data.twoColumn || data.columns);
+
+    if (isTwo && points.length > 0) {
+      var mid = Math.ceil(points.length / 2);
+      var L = points.slice(0, mid);
+      var R = points.slice(mid);
+
+      var leftRect = layout.getRect('contentSlide.twoColLeft');
+      var rightRect = layout.getRect('contentSlide.twoColRight');
+
+      var leftShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, leftRect.left, leftRect.top, leftRect.width, leftRect.height);
+      var rightShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rightRect.left, rightRect.top, rightRect.width, rightRect.height);
+
+      var leftText = L.join('\n\n');
+      var rightText = R.join('\n\n');
+
+      setStyledText(leftShape, leftText, { size: CONFIG.FONTS.sizes.body });
+      setStyledText(rightShape, rightText, { size: CONFIG.FONTS.sizes.body });
+    } else if (points.length > 0) {
+      var bodyRect = layout.getRect('contentSlide.body');
+      var bodyShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bodyRect.left, bodyRect.top, bodyRect.width, bodyRect.height);
+      var bodyText = points.join('\n\n');
+      setStyledText(bodyShape, bodyText, { size: CONFIG.FONTS.sizes.body });
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createAgendaSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+
+    if (data.subhead) {
+      drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    }
+
+    var items = Array.isArray(data.items) ? data.items : [];
+    if (items.length === 0) {
+      items = ['本日の目的', '進め方', '次のアクション'];
+    }
+
+    var area = layout.getRect('processSlide.area');
+    drawNumberedItems(slide, layout, area, items, settings);
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  // ========================================
+  // 10. スライド生成関数（その他の基本スライド）
+  // ========================================
+
+  function createCompareSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+
+    if (data.subhead) {
+      drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    }
+
+    var leftBox = layout.getRect('compareSlide.leftBox');
+    var rightBox = layout.getRect('compareSlide.rightBox');
+
+    var leftItems = Array.isArray(data.leftItems) ? data.leftItems : [];
+    var rightItems = Array.isArray(data.rightItems) ? data.rightItems : [];
+
+    drawCompareBox(slide, layout, leftBox, data.leftTitle || '選択肢A', leftItems, settings, true);
+    drawCompareBox(slide, layout, rightBox, data.rightTitle || '選択肢B', rightItems, settings, false);
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createProcessSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+
+    if (data.subhead) {
+      drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    }
+
+    var area = layout.getRect('processSlide.area');
+    var steps = Array.isArray(data.steps) ? data.steps.slice(0, 4) : [];
+    if (steps.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var n = steps.length;
+    var boxHPx = n <= 2 ? 100 : (n === 3 ? 80 : 65);
+    var arrowHPx = n <= 2 ? 25 : (n === 3 ? 20 : 15);
+    var fontSize = n <= 3 ? 16 : 14;
+
+    var processColors = generateProcessColors(settings.primaryColor || CONFIG.COLORS.primary_color, n);
+    var processBodyBgColor = generateTintedGray(settings.primaryColor || CONFIG.COLORS.primary_color, 30, 94);
+
+    var startY = area.top + layout.pxToPt(10);
+    var currentY = startY;
+    var boxHPt = layout.pxToPt(boxHPx);
+    var arrowHPt = layout.pxToPt(arrowHPx);
+    var headerWPt = layout.pxToPt(120);
+    var bodyLeft = area.left + headerWPt;
+    var bodyWPt = area.width - headerWPt;
+
+    for (var i = 0; i < n; i++) {
+      var cleanText = String(steps[i] || '').replace(/^\s*\d+[\.\s]*/, '');
+
+      var header = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, area.left, currentY, headerWPt, boxHPt);
+      header.getFill().setSolidFill(processColors[i]);
+      header.getBorder().setTransparent();
+      setStyledText(header, 'STEP ' + (i + 1), {
+        size: fontSize,
+        bold: true,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        header.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+
+      var body = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, bodyLeft, currentY, bodyWPt, boxHPt);
+      body.getFill().setSolidFill(processBodyBgColor);
+      body.getBorder().setTransparent();
+
+      var textShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, bodyLeft + layout.pxToPt(20), currentY, bodyWPt - layout.pxToPt(40), boxHPt);
+      setStyledText(textShape, cleanText, { size: fontSize });
+      try {
+        textShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+
+      currentY += boxHPt;
+
+      if (i < n - 1) {
+        var arrowLeft = area.left + headerWPt / 2 - layout.pxToPt(8);
+        var arrow = slide.insertShape(SlidesApp.ShapeType.DOWN_ARROW, arrowLeft, currentY, layout.pxToPt(16), arrowHPt);
+        arrow.getFill().setSolidFill(CONFIG.COLORS.process_arrow);
+        arrow.getBorder().setTransparent();
+        currentY += arrowHPt;
+      }
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createProcessListSlide(slide, data, layout, pageNum, settings) {
+    createProcessSlide(slide, data, layout, pageNum, settings);
+  }
+
+  function createTimelineSlide(slide, data, layout, pageNum, settings) {
+    slide.getBackground().setSolidFill(CONFIG.COLORS.background_white);
+
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+
+    if (data.subhead) {
+      drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    }
+
+    var area = layout.getRect('timelineSlide.area');
+    var milestones = Array.isArray(data.milestones) ? data.milestones : [];
+    if (milestones.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var inner = layout.pxToPt(80);
+    var baseY = area.top + area.height * 0.50;
+    var leftX = area.left + inner;
+    var rightX = area.left + area.width - inner;
+
+    var line = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, leftX, baseY, rightX, baseY);
+    line.getLineFill().setSolidFill(CONFIG.COLORS.faint_gray);
+    line.setWeight(2);
+
+    var gap = milestones.length > 1 ? (rightX - leftX) / (milestones.length - 1) : 0;
+    var timelineColors = generateTimelineCardColors(settings.primaryColor || CONFIG.COLORS.primary_color, milestones.length);
+
+    milestones.forEach(function(m, i) {
+      var x = leftX + gap * i;
+      var dotR = layout.pxToPt(10);
+      var dot = slide.insertShape(SlidesApp.ShapeType.ELLIPSE, x - dotR / 2, baseY - dotR / 2, dotR, dotR);
+      dot.getFill().setSolidFill(timelineColors[i]);
+      dot.getBorder().setTransparent();
+
+      var isAbove = i % 2 === 0;
+      var cardW = layout.pxToPt(180);
+      var cardH = layout.pxToPt(100);
+      var vOffset = layout.pxToPt(40);
+      var cardLeft = x - cardW / 2;
+      var cardTop = isAbove ? (baseY - vOffset - cardH) : (baseY + vOffset);
+
+      var card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, cardLeft, cardTop, cardW, cardH);
+      card.getFill().setSolidFill(timelineColors[i]);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var textShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, cardLeft + layout.pxToPt(8), cardTop + layout.pxToPt(8), cardW - layout.pxToPt(16), cardH - layout.pxToPt(16));
+      setStyledText(textShape, m.label + '\n' + (m.date || ''), {
+        size: 12,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
       });
     });
 
-    // バッチ更新を実行
-    if (requests.length > 0) {
-      Slides.Presentations.batchUpdate({
-        requests: requests
-      }, presentationId);
-    }
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
   }
 
-  /**
-   * スライドコンテンツをフォーマット
-   */
-  function formatSlideContent(content) {
-    // 箇条書きの場合は改行で区切る
-    if (Array.isArray(content)) {
-      return content.map(item => '• ' + item).join('\n');
+  // ========================================
+  // 11. 新規実装スライド（17種類）
+  // ========================================
+
+  function createDiagramSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'diagramSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'diagramSlide', data.subhead);
+    var lanes = Array.isArray(data.lanes) ? data.lanes : [];
+
+    var baseArea = layout.getRect('diagramSlide.lanesArea');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var px = function(p) { return layout.pxToPt(p); };
+    var laneGap_px = CONFIG.DIAGRAM.laneGap_px;
+    var lanePad_px = CONFIG.DIAGRAM.lanePad_px;
+    var laneTitle_h_px = CONFIG.DIAGRAM.laneTitle_h_px;
+    var cardGap_px = CONFIG.DIAGRAM.cardGap_px;
+    var cardMin_h_px = CONFIG.DIAGRAM.cardMin_h_px;
+    var cardMax_h_px = CONFIG.DIAGRAM.cardMax_h_px;
+    var arrow_h_px = CONFIG.DIAGRAM.arrow_h_px;
+    var arrowGap_px = CONFIG.DIAGRAM.arrowGap_px;
+
+    var n = Math.max(1, lanes.length);
+    var laneW = (area.width - px(laneGap_px) * (n - 1)) / n;
+    var cardBoxes = [];
+
+    for (var j = 0; j < n; j++) {
+      var lane = lanes[j] || { title: '', items: [] };
+      var left = area.left + j * (laneW + px(laneGap_px));
+      var lt = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, area.top, laneW, px(laneTitle_h_px));
+      lt.getFill().setSolidFill(settings.primaryColor);
+      lt.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.lane_border);
+      setStyledText(lt, lane.title || '', {
+        size: CONFIG.FONTS.sizes.laneTitle,
+        bold: true,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        lt.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+
+      var laneBodyTop = area.top + px(laneTitle_h_px);
+      var laneBodyHeight = area.height - px(laneTitle_h_px);
+      var laneBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, laneBodyTop, laneW, laneBodyHeight);
+      laneBg.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      laneBg.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.lane_border);
+
+      var items = Array.isArray(lane.items) ? lane.items : [];
+      var availH = laneBodyHeight - px(lanePad_px) * 2;
+      var rows = Math.max(1, items.length);
+      var idealH = (availH - px(cardGap_px) * (rows - 1)) / rows;
+      var cardH = Math.max(px(cardMin_h_px), Math.min(px(cardMax_h_px), idealH));
+      var firstTop = laneBodyTop + px(lanePad_px) + Math.max(0, (availH - (cardH * rows + px(cardGap_px) * (rows - 1))) / 2);
+
+      cardBoxes[j] = [];
+      for (var i = 0; i < rows; i++) {
+        var cardTop = firstTop + i * (cardH + px(cardGap_px));
+        var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, left + px(lanePad_px), cardTop, laneW - px(lanePad_px) * 2, cardH);
+        card.getFill().setSolidFill(CONFIG.COLORS.background_white);
+        card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+        setStyledText(card, items[i] || '', {
+          size: CONFIG.FONTS.sizes.body
+        });
+        try {
+          card.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        } catch (e) {}
+
+        cardBoxes[j][i] = {
+          left: left + px(lanePad_px),
+          top: cardTop,
+          width: laneW - px(lanePad_px) * 2,
+          height: cardH
+        };
+      }
     }
-    return content;
+
+    var maxRows = Math.max(0, Math.max.apply(Math, cardBoxes.map(function(a) { return a ? a.length : 0; })));
+    for (var j = 0; j < n - 1; j++) {
+      for (var i = 0; i < maxRows; i++) {
+        if (cardBoxes[j] && cardBoxes[j][i] && cardBoxes[j + 1] && cardBoxes[j + 1][i]) {
+          drawArrowBetweenRects(slide, cardBoxes[j][i], cardBoxes[j + 1][i], px(arrow_h_px), px(arrowGap_px), settings);
+        }
+      }
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
   }
 
-  /**
-   * ファイルを指定フォルダに移動
-   */
-  function moveToFolder(fileId, folderId) {
+  function createCycleSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    var area = offsetRect(layout.getRect('contentSlide.body'), 0, dy);
+    var items = Array.isArray(data.items) && data.items.length === 4 ? data.items : [];
+    if (items.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var textLengths = items.map(function(item) {
+      var labelLength = (item.label || '').length;
+      var subLabelLength = (item.subLabel || '').length;
+      return labelLength + subLabelLength;
+    });
+    var maxLength = Math.max.apply(Math, textLengths);
+    var avgLength = textLengths.reduce(function(sum, len) { return sum + len; }, 0) / textLengths.length;
+
+    var centerX = area.left + area.width / 2;
+    var centerY = area.top + area.height / 2;
+
+    var radiusX = area.width / 3.2;
+    var radiusY = area.height / 2.6;
+
+    var maxCardW = Math.min(layout.pxToPt(220), radiusX * 0.8);
+    var maxCardH = Math.min(layout.pxToPt(100), radiusY * 0.6);
+
+    var cardW, cardH, fontSize;
+    if (maxLength > 25 || avgLength > 18) {
+      cardW = Math.min(layout.pxToPt(230), maxCardW);
+      cardH = Math.min(layout.pxToPt(105), maxCardH);
+      fontSize = 13;
+    } else if (maxLength > 15 || avgLength > 10) {
+      cardW = Math.min(layout.pxToPt(215), maxCardW);
+      cardH = Math.min(layout.pxToPt(95), maxCardH);
+      fontSize = 14;
+    } else {
+      cardW = layout.pxToPt(200);
+      cardH = layout.pxToPt(90);
+      fontSize = 16;
+    }
+
+    if (data.centerText) {
+      var centerTextBox = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, centerX - layout.pxToPt(100), centerY - layout.pxToPt(50), layout.pxToPt(200), layout.pxToPt(100));
+      setStyledText(centerTextBox, data.centerText, { size: 20, bold: true, align: SlidesApp.ParagraphAlignment.CENTER, color: CONFIG.COLORS.text_primary });
+      try { centerTextBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+    }
+
+    var positions = [
+      { x: centerX + radiusX, y: centerY },
+      { x: centerX, y: centerY + radiusY },
+      { x: centerX - radiusX, y: centerY },
+      { x: centerX, y: centerY - radiusY }
+    ];
+
+    positions.forEach(function(pos, i) {
+      var cardX = pos.x - cardW / 2;
+      var cardY = pos.y - cardH / 2;
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cardX, cardY, cardW, cardH);
+      card.getFill().setSolidFill(settings.primaryColor);
+      card.getBorder().setTransparent();
+      var item = items[i] || {};
+      var subLabelText = item.subLabel || (i + 1) + '番目';
+      var labelText = item.label || '';
+
+      setStyledText(card, subLabelText + '\n' + labelText, { size: fontSize, bold: true, color: CONFIG.COLORS.background_white, align: SlidesApp.ParagraphAlignment.CENTER });
+      try {
+        card.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        var textRange = card.getText();
+        var subLabelEnd = subLabelText.length;
+        if (textRange.asString().length > subLabelEnd) {
+          textRange.getRange(0, subLabelEnd).getTextStyle().setFontSize(Math.max(10, fontSize - 2));
+        }
+      } catch (e) {}
+    });
+
+    var arrowRadiusX = radiusX * 0.75;
+    var arrowRadiusY = radiusY * 0.80;
+    var arrowSize = layout.pxToPt(80);
+
+    var arrowPositions = [
+      { left: centerX + arrowRadiusX, top: centerY - arrowRadiusY, rotation: 90 },
+      { left: centerX + arrowRadiusX, top: centerY + arrowRadiusY, rotation: 180 },
+      { left: centerX - arrowRadiusX, top: centerY + arrowRadiusY, rotation: 270 },
+      { left: centerX - arrowRadiusX, top: centerY - arrowRadiusY, rotation: 0 }
+    ];
+
+    arrowPositions.forEach(function(pos) {
+      var arrow = slide.insertShape(SlidesApp.ShapeType.BENT_ARROW, pos.left - arrowSize / 2, pos.top - arrowSize / 2, arrowSize, arrowSize);
+      arrow.getFill().setSolidFill(CONFIG.COLORS.ghost_gray);
+      arrow.getBorder().setTransparent();
+      arrow.setRotation(pos.rotation);
+    });
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createCardsSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'cardsSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'cardsSlide', data.subhead);
+
+    var baseArea = layout.getRect('cardsSlide.gridArea');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var items = Array.isArray(data.items) ? data.items : [];
+    var cols = Math.min(3, Math.max(2, Number(data.columns) || (items.length <= 4 ? 2 : 3)));
+    var gap = layout.pxToPt(16);
+    var rows = Math.ceil(items.length / cols);
+    var cardW = (area.width - gap * (cols - 1)) / cols;
+    var cardH = Math.max(layout.pxToPt(92), (area.height - gap * (rows - 1)) / rows);
+
+    for (var idx = 0; idx < items.length; idx++) {
+      var r = Math.floor(idx / cols);
+      var c = idx % cols;
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left + c * (cardW + gap), area.top + r * (cardH + gap), cardW, cardH);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var obj = items[idx];
+      if (typeof obj === 'string') {
+        setStyledText(card, obj, { size: CONFIG.FONTS.sizes.body });
+      } else {
+        var title = String(obj.title || '');
+        var desc = String(obj.desc || '');
+        if (title && desc) {
+          var combined = title + '\n\n' + desc;
+          setStyledText(card, combined, { size: CONFIG.FONTS.sizes.body });
+          try {
+            card.getText().getRange(0, title.length).getTextStyle().setBold(true);
+          } catch (e) {}
+        } else if (title) {
+          setStyledText(card, title, { size: CONFIG.FONTS.sizes.body, bold: true });
+        } else {
+          setStyledText(card, desc, { size: CONFIG.FONTS.sizes.body });
+        }
+      }
+      try {
+        card.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createHeaderCardsSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'cardsSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'cardsSlide', data.subhead);
+
+    var baseArea = layout.getRect('cardsSlide.gridArea');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var items = Array.isArray(data.items) ? data.items : [];
+    var cols = Math.min(3, Math.max(2, Number(data.columns) || (items.length <= 4 ? 2 : 3)));
+    var gap = layout.pxToPt(16);
+    var rows = Math.ceil(items.length / cols);
+    var cardW = (area.width - gap * (cols - 1)) / cols;
+    var cardH = Math.max(layout.pxToPt(92), (area.height - gap * (rows - 1)) / rows);
+
+    for (var idx = 0; idx < items.length; idx++) {
+      var r = Math.floor(idx / cols);
+      var c = idx % cols;
+      var left = area.left + c * (cardW + gap);
+      var top = area.top + r * (cardH + gap);
+
+      var titleText = String(items[idx].title || '');
+      var descText = String(items[idx].desc || '');
+      var headerHeight = layout.pxToPt(40);
+
+      var headerShape = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, top, cardW, headerHeight);
+      headerShape.getFill().setSolidFill(settings.primaryColor);
+      headerShape.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var bodyShape = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, top + headerHeight, cardW, cardH - headerHeight);
+      bodyShape.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      bodyShape.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var headerTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left, top, cardW, headerHeight);
+      setStyledText(headerTextShape, titleText, {
+        size: CONFIG.FONTS.sizes.body,
+        bold: true,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      }, settings.primaryColor, settings.primaryColor);
+      try {
+        headerTextShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+
+      var bodyTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left + layout.pxToPt(12), top + headerHeight, cardW - layout.pxToPt(24), cardH - headerHeight);
+      setStyledText(bodyTextShape, descText, {
+        size: CONFIG.FONTS.sizes.body,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        bodyTextShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createTableSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'tableSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'tableSlide', data.subhead);
+
+    var baseArea = layout.getRect('tableSlide.area');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var headers = Array.isArray(data.headers) ? data.headers : [];
+    var rawRows = Array.isArray(data.rows) ? data.rows : [];
+    var columnWidths = Array.isArray(data.columnWidths) ? data.columnWidths : [];
+
+    var rows = rawRows.map(function(row, idx) {
+      if (!Array.isArray(row)) {
+        Logger.log('Row ' + idx + ' is not an array, converting to empty array');
+        return new Array(headers.length).fill('');
+      }
+      if (row.length < headers.length) {
+        Logger.log('Row ' + idx + ' has ' + row.length + ' elements, padding to ' + headers.length);
+        return row.concat(new Array(headers.length - row.length).fill(''));
+      }
+      if (row.length > headers.length) {
+        Logger.log('Row ' + idx + ' has ' + row.length + ' elements, truncating to ' + headers.length);
+        return row.slice(0, headers.length);
+      }
+      return row;
+    });
+
     try {
-      const file = DriveApp.getFileById(fileId);
-      const folder = DriveApp.getFolderById(folderId);
+      if (headers.length > 0) {
+        var table = slide.insertTable(rows.length + 1, headers.length, area.left, area.top, area.width, area.height);
 
-      // 既存の親フォルダから削除
-      const parents = file.getParents();
-      while (parents.hasNext()) {
-        const parent = parents.next();
-        parent.removeFile(file);
+        for (var c = 0; c < headers.length; c++) {
+          var cell = table.getCell(0, c);
+          cell.getFill().setSolidFill(CONFIG.COLORS.table_header_bg);
+          setStyledText(cell, String(headers[c] || ''), {
+            bold: true,
+            color: CONFIG.COLORS.text_primary,
+            align: SlidesApp.ParagraphAlignment.CENTER
+          });
+          try {
+            cell.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+          } catch (e) {}
+        }
+
+        for (var r = 0; r < rows.length; r++) {
+          var row = rows[r];
+          for (var c = 0; c < headers.length; c++) {
+            try {
+              var cell = table.getCell(r + 1, c);
+              cell.getFill().setSolidFill(CONFIG.COLORS.background_white);
+
+              var cellValue = '';
+              if (Array.isArray(row)) {
+                if (c < row.length && row[c] != null) {
+                  cellValue = String(row[c]);
+                }
+              }
+
+              try {
+                setStyledText(cell, cellValue, {
+                  align: SlidesApp.ParagraphAlignment.CENTER
+                });
+              } catch (textError) {
+                Logger.log('Text setting error at row ' + r + ', col ' + c + ': ' + textError.message);
+                try {
+                  cell.getText().setText('');
+                } catch (e2) {
+                  Logger.log('Fallback text setting failed: ' + e2.message);
+                }
+              }
+
+              try {
+                cell.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+              } catch (e) {
+                Logger.log('Content alignment error at row ' + r + ', col ' + c + ': ' + e.message);
+              }
+            } catch (cellError) {
+              Logger.log('Cell access error at row ' + r + ', col ' + c + ': ' + cellError.message);
+            }
+          }
+        }
+
+        if (columnWidths.length === headers.length) {
+          Logger.log('Applying column widths: ' + JSON.stringify(columnWidths));
+          Logger.log('Table area width: ' + area.width + ' pt');
+
+          for (var c = 0; c < headers.length; c++) {
+            var colWidth = area.width * columnWidths[c];
+            try {
+              var column = table.getColumn(c);
+              column.setWidth(colWidth);
+              Logger.log('Column ' + c + ' width set to ' + colWidth + ' pt (' + (columnWidths[c] * 100).toFixed(1) + '%)');
+            } catch (e) {
+              Logger.log('Column width setting error for column ' + c + ': ' + e.message + ', stack: ' + e.stack);
+            }
+          }
+
+          try {
+            for (var c = 0; c < headers.length; c++) {
+              var actualWidth = table.getColumn(c).getWidth();
+              Logger.log('Column ' + c + ' actual width after setting: ' + actualWidth + ' pt');
+            }
+          } catch (e) {
+            Logger.log('Could not verify column widths: ' + e.message);
+          }
+        } else if (columnWidths.length > 0) {
+          Logger.log('Column widths count (' + columnWidths.length + ') does not match headers count (' + headers.length + ')');
+        }
+      }
+    } catch (e) {
+      Logger.log('Table creation error: ' + e.message);
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createProgressSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'progressSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'progressSlide', data.subhead);
+
+    var baseArea = layout.getRect('progressSlide.area');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var items = Array.isArray(data.items) ? data.items : [];
+    var n = Math.max(1, items.length);
+    var cardGap = layout.pxToPt(12);
+    var cardHeight = Math.max(layout.pxToPt(80), (area.height - cardGap * (n - 1)) / n);
+    var cardPadding = layout.pxToPt(15);
+    var barHeight = layout.pxToPt(12);
+
+    var percentHeight = layout.pxToPt(30);
+    var percentWidth = layout.pxToPt(120);
+
+    for (var i = 0; i < n; i++) {
+      var cardTop = area.top + i * (cardHeight + cardGap);
+      var p = Math.max(0, Math.min(100, Number(items[i].percent || 0)));
+
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left, cardTop, area.width, cardHeight);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_white);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var labelHeight = layout.pxToPt(20);
+      var labelWidth = area.width - percentWidth - cardPadding * 3;
+      var label = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + cardPadding, cardTop + cardPadding, labelWidth, labelHeight);
+      setStyledText(label, String(items[i].label || ''), {
+        size: CONFIG.FONTS.sizes.body,
+        bold: true,
+        align: SlidesApp.ParagraphAlignment.LEFT
+      });
+
+      var pct = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + area.width - percentWidth - cardPadding, cardTop + cardPadding - layout.pxToPt(2), percentWidth, percentHeight);
+      setStyledText(pct, p + '%', {
+        size: 20,
+        bold: true,
+        color: settings.primaryColor,
+        align: SlidesApp.ParagraphAlignment.RIGHT
+      });
+
+      var barTop = cardTop + cardHeight - cardPadding - barHeight;
+      var barWidth = area.width - cardPadding * 2;
+
+      var barBG = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left + cardPadding, barTop, barWidth, barHeight);
+      barBG.getFill().setSolidFill(CONFIG.COLORS.faint_gray);
+      barBG.getBorder().setTransparent();
+
+      if (p > 0) {
+        var filledBarWidth = Math.max(layout.pxToPt(6), barWidth * (p / 100));
+        var barFG = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left + cardPadding, barTop, filledBarWidth, barHeight);
+        barFG.getFill().setSolidFill(settings.primaryColor);
+        barFG.getBorder().setTransparent();
+      }
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createQuoteSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'quoteSlide', data.title || '引用', settings);
+    var dy = drawSubheadIfAny(slide, layout, 'quoteSlide', data.subhead);
+
+    var baseTop = 120;
+    var subheadHeight = data.subhead ? layout.pxToPt(40) : 0;
+    var margin = layout.pxToPt(10);
+
+    var area = offsetRect(layout.getRect({
+      left: 40,
+      top: baseTop + subheadHeight + margin,
+      width: 880,
+      height: 320 - subheadHeight - margin
+    }), 0, dy);
+
+    var bgCard = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left, area.top, area.width, area.height);
+    bgCard.getFill().setSolidFill(CONFIG.COLORS.background_white);
+    var border = bgCard.getBorder();
+    border.getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+    border.setWeight(2);
+
+    var padding = layout.pxToPt(40);
+    var textLeft = area.left + padding;
+    var textTop = area.top + padding;
+    var textWidth = area.width - (padding * 2);
+    var textHeight = area.height - (padding * 2);
+    var quoteTextHeight = textHeight - layout.pxToPt(30);
+
+    var textShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textLeft, textTop, textWidth, quoteTextHeight);
+    setStyledText(textShape, data.text || '', {
+      size: 24,
+      align: SlidesApp.ParagraphAlignment.CENTER,
+      color: CONFIG.COLORS.text_primary
+    });
+    try {
+      textShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+
+    var authorTop = textTop + quoteTextHeight;
+    var authorShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textLeft, authorTop, textWidth, layout.pxToPt(30));
+    setStyledText(authorShape, '— ' + (data.author || ''), {
+      size: 16,
+      color: CONFIG.COLORS.neutral_gray,
+      align: SlidesApp.ParagraphAlignment.END
+    });
+    try {
+      authorShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+    } catch (e) {}
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createKpiSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'kpiSlide', data.title || '主要指標', settings);
+    var dy = drawSubheadIfAny(slide, layout, 'kpiSlide', data.subhead);
+
+    var baseArea = layout.getRect('kpiSlide.gridArea');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+
+    var items = Array.isArray(data.items) ? data.items : [];
+    var cols = Math.min(4, Math.max(2, Number(data.columns) || (items.length <= 4 ? items.length : 4)));
+    var gap = layout.pxToPt(16);
+    var cardW = (area.width - gap * (cols - 1)) / cols;
+    var cardH = layout.pxToPt(240);
+
+    for (var idx = 0; idx < items.length; idx++) {
+      var c = idx % cols;
+      var r = Math.floor(idx / cols);
+      var left = area.left + c * (cardW + gap);
+      var top = area.top + r * (cardH + gap);
+
+      var card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, top, cardW, cardH);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var item = data.items[idx] || {};
+      var pad = layout.pxToPt(15);
+
+      var labelShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left + pad, top + layout.pxToPt(25), cardW - pad * 2, layout.pxToPt(35));
+      setStyledText(labelShape, item.label || 'KPI', {
+        size: 14,
+        color: CONFIG.COLORS.neutral_gray
+      });
+
+      var valueShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left + pad, top + layout.pxToPt(80), cardW - pad * 2, layout.pxToPt(80));
+      setStyledText(valueShape, item.value || '0', {
+        size: 32,
+        bold: true,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        valueShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+
+      var changeShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left + pad, top + layout.pxToPt(180), cardW - pad * 2, layout.pxToPt(40));
+      var changeColor = CONFIG.COLORS.text_primary;
+      if (item.status === 'bad') changeColor = '#d93025';
+      if (item.status === 'good') changeColor = '#1e8e3e';
+      if (item.status === 'neutral') changeColor = CONFIG.COLORS.neutral_gray;
+
+      setStyledText(changeShape, item.change || '', {
+        size: 14,
+        color: changeColor,
+        bold: true,
+        align: SlidesApp.ParagraphAlignment.END
+      });
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createBulletCardsSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    var area = offsetRect(layout.getRect('contentSlide.body'), 0, dy);
+    var items = Array.isArray(data.items) ? data.items.slice(0, 3) : [];
+    if (items.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var gap = layout.pxToPt(16);
+    var cardHeight = (area.height - gap * (items.length - 1)) / items.length;
+
+    for (var i = 0; i < items.length; i++) {
+      var card = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, area.left, area.top + i * (cardHeight + gap), area.width, cardHeight);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+
+      var padding = layout.pxToPt(20);
+      var title = String(items[i].title || '');
+      var desc = String(items[i].desc || '');
+
+      if (title && desc) {
+        var titleFontSize = 14;
+        var titleHeight = layout.pxToPt(titleFontSize + 4);
+
+        var titleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + padding, area.top + i * (cardHeight + gap) + layout.pxToPt(12), area.width - padding * 2, titleHeight);
+        setStyledText(titleShape, title, {
+          size: titleFontSize,
+          bold: true
+        });
+
+        var descTop = area.top + i * (cardHeight + gap) + layout.pxToPt(12) + titleHeight + layout.pxToPt(8);
+        var descHeight = cardHeight - layout.pxToPt(12) - titleHeight - layout.pxToPt(8);
+
+        var descFontSize = 14;
+        if (desc.length > 100) {
+          descFontSize = 12;
+        } else if (desc.length > 80) {
+          descFontSize = 13;
+        }
+
+        var descShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + padding, descTop, area.width - padding * 2, descHeight);
+        setStyledText(descShape, desc, {
+          size: descFontSize
+        });
+
+        try {
+          descShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        } catch (e) {}
+      } else {
+        var singleFontSize = 14;
+        var singleHeight = layout.pxToPt(singleFontSize + 8);
+        var shape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + padding, area.top + i * (cardHeight + gap) + (cardHeight - singleHeight) / 2, area.width - padding * 2, singleHeight);
+        setStyledText(shape, title || desc, {
+          size: singleFontSize,
+          bold: !!title
+        });
+        try {
+          shape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        } catch (e) {}
+      }
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createFaqSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'contentSlide', data.title || 'よくあるご質問', settings);
+    var dy = drawSubheadIfAny(slide, layout, 'contentSlide', data.subhead);
+    var area = offsetRect(layout.getRect('contentSlide.body'), 0, dy);
+    var items = Array.isArray(data.items) ? data.items.slice(0, 4) : [];
+    if (items.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var currentY = area.top;
+    var cardGap = layout.pxToPt(12);
+    var totalGaps = cardGap * (items.length - 1);
+    var availableHeight = area.height - totalGaps;
+    var cardHeight = availableHeight / items.length;
+
+    for (var index = 0; index < items.length; index++) {
+      var item = items[index];
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, area.left, currentY, area.width, cardHeight);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+      card.getBorder().setWeight(1);
+
+      var cardPadding, qAreaRatio, qAGap;
+      if (items.length <= 2) {
+        cardPadding = layout.pxToPt(16);
+        qAreaRatio = 0.30;
+        qAGap = layout.pxToPt(6);
+      } else if (items.length === 3) {
+        cardPadding = layout.pxToPt(12);
+        qAreaRatio = 0.35;
+        qAGap = layout.pxToPt(4);
+      } else {
+        cardPadding = layout.pxToPt(8);
+        qAreaRatio = 0.40;
+        qAGap = layout.pxToPt(2);
       }
 
-      // 新しいフォルダに追加
-      folder.addFile(file);
-    } catch (e) {
-      Logger.log('フォルダ移動エラー: ' + e.message);
-      // エラーが発生してもスライド作成自体は成功しているので、エラーを投げない
+      var baseFontSize = items.length >= 4 ? 12 : 14;
+      var availableHeightInCard = cardHeight - cardPadding * 2;
+      var qAreaHeight = Math.floor(availableHeightInCard * qAreaRatio);
+      var aAreaHeight = availableHeightInCard - qAreaHeight - qAGap;
+
+      var qTop = currentY + cardPadding;
+      var qText = item.q || '';
+      var qParsed = parseInlineStyles(qText);
+      var qFullText = 'Q. ' + qParsed.output;
+
+      var qTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + cardPadding, qTop, area.width - cardPadding * 2, qAreaHeight - layout.pxToPt(2));
+      qTextShape.getFill().setTransparent();
+      qTextShape.getBorder().setTransparent();
+
+      var qTextRange = qTextShape.getText().setText(qFullText);
+      applyTextStyle(qTextRange, {
+        size: baseFontSize,
+        color: CONFIG.COLORS.text_primary,
+        align: SlidesApp.ParagraphAlignment.LEFT
+      });
+
+      try {
+        var qPrefixRange = qTextRange.getRange(0, 2);
+        qPrefixRange.getTextStyle().setBold(true).setForegroundColor(settings.primaryColor);
+        if (qFullText.length > 3) {
+          var qContentRange = qTextRange.getRange(3, qFullText.length);
+          qContentRange.getTextStyle().setBold(true);
+        }
+        for (var rIdx = 0; rIdx < qParsed.ranges.length; rIdx++) {
+          var r = qParsed.ranges[rIdx];
+          var adjustedRange = qTextRange.getRange(r.start + 3, r.end + 3);
+          if (r.bold) adjustedRange.getTextStyle().setBold(true);
+          if (r.color) {
+            var finalColor = r.color;
+            if (r.color === CONFIG.COLORS.primary_color) {
+              finalColor = CONFIG.COLORS.background_white;
+            }
+            adjustedRange.getTextStyle().setForegroundColor(finalColor);
+          }
+        }
+      } catch (e) {}
+
+      try {
+        qTextShape.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+      } catch (e) {}
+
+      var aTop = qTop + qAreaHeight + qAGap;
+      var aText = item.a || '';
+      var aParsed = parseInlineStyles(aText);
+      var aFullText = 'A. ' + aParsed.output;
+      var aIndent = layout.pxToPt(16);
+
+      var aTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left + cardPadding + aIndent, aTop, area.width - cardPadding * 2 - aIndent, aAreaHeight - layout.pxToPt(2));
+      aTextShape.getFill().setTransparent();
+      aTextShape.getBorder().setTransparent();
+
+      var aTextRange = aTextShape.getText().setText(aFullText);
+      applyTextStyle(aTextRange, {
+        size: baseFontSize,
+        color: CONFIG.COLORS.text_primary,
+        align: SlidesApp.ParagraphAlignment.LEFT
+      });
+
+      try {
+        var aPrefixRange = aTextRange.getRange(0, 2);
+        aPrefixRange.getTextStyle().setBold(true).setForegroundColor(generateTintedGray(settings.primaryColor, 15, 70));
+        for (var aRIdx = 0; aRIdx < aParsed.ranges.length; aRIdx++) {
+          var aR = aParsed.ranges[aRIdx];
+          var aAdjustedRange = aTextRange.getRange(aR.start + 3, aR.end + 3);
+          if (aR.bold) aAdjustedRange.getTextStyle().setBold(true);
+          if (aR.color) aAdjustedRange.getTextStyle().setForegroundColor(aR.color);
+        }
+      } catch (e) {}
+
+      try {
+        aTextShape.setContentAlignment(SlidesApp.ContentAlignment.TOP);
+      } catch (e) {}
+
+      currentY += cardHeight + cardGap;
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createStatsCompareSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'compareSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'compareSlide', data.subhead);
+
+    var area = offsetRect(layout.getRect({
+      left: 25,
+      top: 130,
+      width: 910,
+      height: 330
+    }), 0, dy);
+    var stats = Array.isArray(data.stats) ? data.stats : [];
+    if (stats.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var cushion = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, area.left, area.top, area.width, area.height);
+    cushion.getFill().setSolidFill(CONFIG.COLORS.background_white);
+    cushion.getBorder().setTransparent();
+
+    var headerHeight = layout.pxToPt(40);
+    var totalContentWidth = area.width;
+    var centerColWidth = totalContentWidth * 0.25;
+    var sideColWidth = (totalContentWidth - centerColWidth) / 2;
+
+    var leftValueColX = area.left;
+    var centerLabelColX = leftValueColX + sideColWidth;
+    var rightValueColX = centerLabelColX + centerColWidth;
+
+    var labelColor = generateTintedGray(settings.primaryColor, 35, 70);
+    var compareColors = generateCompareColors(settings.primaryColor);
+
+    var leftHeader = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, leftValueColX, area.top, sideColWidth, headerHeight);
+    leftHeader.getFill().setSolidFill(compareColors.left);
+    leftHeader.getBorder().setTransparent();
+    setStyledText(leftHeader, data.leftTitle || '', {
+      size: 14,
+      bold: true,
+      color: CONFIG.COLORS.background_white,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+    try { leftHeader.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+
+    var rightHeader = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, rightValueColX, area.top, sideColWidth, headerHeight);
+    rightHeader.getFill().setSolidFill(compareColors.right);
+    rightHeader.getBorder().setTransparent();
+    setStyledText(rightHeader, data.rightTitle || '', {
+      size: 14,
+      bold: true,
+      color: CONFIG.COLORS.background_white,
+      align: SlidesApp.ParagraphAlignment.CENTER
+    });
+    try { rightHeader.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+
+    var contentAreaHeight = area.height - headerHeight;
+    var rowHeight = contentAreaHeight / stats.length;
+    var currentY = area.top + headerHeight;
+
+    for (var index = 0; index < stats.length; index++) {
+      var stat = stats[index];
+      var centerY = currentY + rowHeight / 2;
+      var valueHeight = layout.pxToPt(40);
+
+      var labelShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, centerLabelColX, centerY - valueHeight / 2, centerColWidth, valueHeight);
+      setStyledText(labelShape, stat.label || '', {
+        size: 14,
+        align: SlidesApp.ParagraphAlignment.CENTER,
+        color: labelColor,
+        bold: true
+      });
+      try { labelShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+
+      var leftValueShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, leftValueColX, centerY - valueHeight / 2, sideColWidth, valueHeight);
+      setStyledText(leftValueShape, stat.leftValue || '', {
+        size: 22,
+        bold: true,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try { leftValueShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+
+      var rightValueShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, rightValueColX, centerY - valueHeight / 2, sideColWidth, valueHeight);
+      setStyledText(rightValueShape, stat.rightValue || '', {
+        size: 22,
+        bold: true,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try { rightValueShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch (e) {}
+
+      if (index < stats.length - 1) {
+        var lineY = currentY + rowHeight;
+        var line = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, area.left + layout.pxToPt(15), lineY, area.left + area.width - layout.pxToPt(15), lineY);
+        line.getLineFill().setSolidFill(CONFIG.COLORS.faint_gray);
+        line.setWeight(1);
+      }
+
+      currentY += rowHeight;
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createBarCompareSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'compareSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'compareSlide', data.subhead);
+
+    var area = offsetRect(layout.getRect({
+      left: 40,
+      top: 130,
+      width: 880,
+      height: 340
+    }), 0, dy);
+    var stats = Array.isArray(data.stats) ? data.stats : [];
+    if (stats.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+
+    var showTrends = !!data.showTrends;
+    var blockMargin, titleHeight, titleFontSize, barHeight, valueFontSize, valueWidth;
+
+    if (stats.length <= 2) {
+      blockMargin = layout.pxToPt(30);
+      titleHeight = layout.pxToPt(40);
+      titleFontSize = 18;
+      barHeight = layout.pxToPt(20);
+      valueFontSize = 20;
+      valueWidth = layout.pxToPt(120);
+    } else if (stats.length <= 3) {
+      blockMargin = layout.pxToPt(25);
+      titleHeight = layout.pxToPt(35);
+      titleFontSize = 16;
+      barHeight = layout.pxToPt(18);
+      valueFontSize = 18;
+      valueWidth = layout.pxToPt(110);
+    } else {
+      blockMargin = layout.pxToPt(20);
+      titleHeight = layout.pxToPt(30);
+      titleFontSize = 15;
+      barHeight = layout.pxToPt(16);
+      valueFontSize = 16;
+      valueWidth = layout.pxToPt(100);
+    }
+
+    var totalContentHeight = area.height - (blockMargin * (stats.length - 1));
+    var blockHeight = totalContentHeight / stats.length;
+    var currentY = area.top;
+
+    for (var statIdx = 0; statIdx < stats.length; statIdx++) {
+      var stat = stats[statIdx];
+      var blockTop = currentY;
+      var barAreaHeight = blockHeight - titleHeight;
+      var barRowHeight = barAreaHeight / 2;
+
+      var shouldShowTrend = showTrends && stat.trend;
+
+      var statTitleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left, blockTop, area.width, titleHeight);
+      setStyledText(statTitleShape, stat.label || '', {
+        size: titleFontSize,
+        bold: true
+      });
+      try { statTitleShape.setContentAlignment(SlidesApp.ContentAlignment.BOTTOM); } catch(e){}
+
+      var asIsY = blockTop + titleHeight;
+      var toBeY = asIsY + barRowHeight;
+
+      var labelWidth = layout.pxToPt(90);
+      var barWidth = Math.max(layout.pxToPt(50), area.width - labelWidth - valueWidth - layout.pxToPt(10));
+      var barLeft = area.left + labelWidth;
+
+      var val1 = parseNumericValue(stat.leftValue);
+      var val2 = parseNumericValue(stat.rightValue);
+      var maxValue = Math.max(val1, val2, 1);
+
+      var asIsLabel = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left, asIsY, labelWidth, barRowHeight);
+      setStyledText(asIsLabel, '現状', { size: 12, color: CONFIG.COLORS.neutral_gray });
+      var asIsValue = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, barLeft + barWidth, asIsY, valueWidth, barRowHeight);
+      setStyledText(asIsValue, stat.leftValue || '', { size: valueFontSize, bold: true, align: SlidesApp.ParagraphAlignment.END });
+
+      var asIsTrack = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, barLeft, asIsY + barRowHeight/2 - barHeight/2, barWidth, barHeight);
+      asIsTrack.getFill().setSolidFill(CONFIG.COLORS.faint_gray);
+      asIsTrack.getBorder().setTransparent();
+      var asIsFillWidth = Math.max(layout.pxToPt(2), barWidth * (val1 / maxValue));
+      var asIsFill = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, barLeft, asIsY + barRowHeight/2 - barHeight/2, asIsFillWidth, barHeight);
+      asIsFill.getFill().setSolidFill(CONFIG.COLORS.neutral_gray);
+      asIsFill.getBorder().setTransparent();
+
+      var toBeLabel = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, area.left, toBeY, labelWidth, barRowHeight);
+      setStyledText(toBeLabel, '導入後', { size: 12, color: settings.primaryColor, bold: true });
+      var toBeValue = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, barLeft + barWidth, toBeY, valueWidth, barRowHeight);
+      setStyledText(toBeValue, stat.rightValue || '', { size: valueFontSize, bold: true, color: settings.primaryColor, align: SlidesApp.ParagraphAlignment.END });
+
+      var toBeTrack = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, barLeft, toBeY + barRowHeight/2 - barHeight/2, barWidth, barHeight);
+      toBeTrack.getFill().setSolidFill(generateTintedGray(settings.primaryColor, 20, 96));
+      toBeTrack.getBorder().setTransparent();
+      var toBeFillWidth = Math.max(layout.pxToPt(2), barWidth * (val2 / maxValue));
+
+      var shape = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, barLeft, toBeY + barRowHeight/2 - barHeight/2, toBeFillWidth, barHeight);
+      shape.getFill().setSolidFill(settings.primaryColor);
+      shape.getBorder().setTransparent();
+
+      try {
+        [asIsLabel, asIsValue, toBeLabel, toBeValue].forEach(function(s) { s.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); });
+      } catch(e){}
+
+      if (shouldShowTrend) {
+        insertTrendIcon(slide, { left: barLeft + barWidth + layout.pxToPt(10), top: toBeY + barRowHeight/2 }, stat.trend, settings);
+      }
+
+      currentY += blockHeight + blockMargin;
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createTriangleSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'triangleSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'triangleSlide', data.subhead);
+    var baseArea = layout.getRect('triangleSlide.area');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+    var items = Array.isArray(data.items) ? data.items.slice(0, 3) : [];
+    if (items.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+    var textLengths = items.map(function(item) { return (item || '').length; });
+    var maxLength = Math.max.apply(Math, textLengths);
+    var avgLength = textLengths.reduce(function(sum, len) { return sum + len; }, 0) / textLengths.length;
+    var cardW, cardH, fontSize;
+    if (maxLength > 60 || avgLength > 40) {
+      cardW = layout.pxToPt(340);
+      cardH = layout.pxToPt(160);
+      fontSize = 13;
+    } else if (maxLength > 35 || avgLength > 25) {
+      cardW = layout.pxToPt(290);
+      cardH = layout.pxToPt(135);
+      fontSize = 14;
+    } else {
+      cardW = layout.pxToPt(250);
+      cardH = layout.pxToPt(115);
+      fontSize = 15;
+    }
+    var maxCardW = (area.width - layout.pxToPt(160)) / 1.5;
+    var maxCardH = (area.height - layout.pxToPt(80)) / 2;
+    cardW = Math.min(cardW, maxCardW);
+    cardH = Math.min(cardH, maxCardH);
+    var positions = [
+      { x: area.left + area.width / 2, y: area.top + layout.pxToPt(40) + cardH / 2 },
+      { x: area.left + area.width - layout.pxToPt(80) - cardW / 2, y: area.top + area.height - cardH / 2 },
+      { x: area.left + layout.pxToPt(80) + cardW / 2, y: area.top + area.height - cardH / 2 }
+    ];
+    for (var i = 0; i < positions.length; i++) {
+      var pos = positions[i];
+      if (!items[i]) continue;
+      var cardX = pos.x - cardW / 2;
+      var cardY = pos.y - cardH / 2;
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cardX, cardY, cardW, cardH);
+      card.getFill().setSolidFill(settings.primaryColor);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+      var item = items[i] || {};
+      var itemTitle = typeof item === 'string' ? '' : (item.title || '');
+      var itemDesc = typeof item === 'string' ? item : (item.desc || '');
+      if (typeof item === 'string' || !itemTitle) {
+        var itemText = typeof item === 'string' ? item : itemDesc;
+        var processedText = smartFormatTriangleText(itemText);
+        if (processedText.isSimple) {
+          var appliedFontSize = fontSize;
+          if ((processedText.text || '').length > 35) {
+            appliedFontSize = Math.max(fontSize - 1, 12);
+          }
+          setStyledText(card, processedText.text, {
+            size: appliedFontSize,
+            bold: true,
+            color: CONFIG.COLORS.background_white,
+            align: SlidesApp.ParagraphAlignment.CENTER
+          }, settings.primaryColor, settings.primaryColor);
+        } else {
+          var lines = processedText.text.split('\n');
+          var header = lines[0] || '';
+          var body = lines.slice(1).join('\n') || '';
+          var enhancedText = header + '\n' + body;
+          var headerFontSize = Math.max(fontSize - 1, 13);
+          var bodyFontSize = Math.max(fontSize - 3, 11);
+          setStyledText(card, enhancedText, {
+            size: bodyFontSize,
+            bold: false,
+            color: CONFIG.COLORS.background_white,
+            align: SlidesApp.ParagraphAlignment.CENTER
+          }, settings.primaryColor, settings.primaryColor);
+          try {
+            var textRange = card.getText();
+            var headerEndIndex = header.length;
+            if (headerEndIndex > 0) {
+              var headerRange = textRange.getRange(0, headerEndIndex);
+              headerRange.getTextStyle().setBold(true).setFontSize(headerFontSize).setForegroundColor(CONFIG.COLORS.background_white);
+            }
+          } catch (e) {}
+        }
+      } else {
+        var enhancedText2 = itemDesc ? (itemTitle + '\n' + itemDesc) : itemTitle;
+        var headerFontSize2 = Math.max(fontSize - 1, 13);
+        var bodyFontSize2 = Math.max(fontSize - 3, 11);
+        setStyledText(card, enhancedText2, {
+          size: bodyFontSize2,
+          bold: false,
+          color: CONFIG.COLORS.background_white,
+          align: SlidesApp.ParagraphAlignment.CENTER
+        }, settings.primaryColor, settings.primaryColor);
+        try {
+          var textRange2 = card.getText();
+          var headerEndIndex2 = itemTitle.length;
+          if (headerEndIndex2 > 0) {
+            var headerRange2 = textRange2.getRange(0, headerEndIndex2);
+            headerRange2.getTextStyle().setBold(true).setFontSize(headerFontSize2).setForegroundColor(CONFIG.COLORS.background_white);
+          }
+        } catch (e) {}
+      }
+      try {
+        card.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+    }
+    var arrowPadding = cardW > layout.pxToPt(300) ? layout.pxToPt(25) : layout.pxToPt(20);
+    var cardEdges = [
+      { rightCenter: { x: positions[0].x + cardW / 2, y: positions[0].y }, leftCenter: { x: positions[0].x - cardW / 2, y: positions[0].y }, bottomCenter: { x: positions[0].x, y: positions[0].y + cardH / 2 } },
+      { leftCenter: { x: positions[1].x - cardW / 2, y: positions[1].y }, rightCenter: { x: positions[1].x + cardW / 2, y: positions[1].y }, topCenter: { x: positions[1].x, y: positions[1].y - cardH / 2 } },
+      { rightCenter: { x: positions[2].x + cardW / 2, y: positions[2].y }, leftCenter: { x: positions[2].x - cardW / 2, y: positions[2].y }, topCenter: { x: positions[2].x, y: positions[2].y - cardH / 2 } }
+    ];
+    var arrowCurves = [
+      { startX: cardEdges[0].rightCenter.x + arrowPadding, startY: cardEdges[0].rightCenter.y, endX: cardEdges[1].topCenter.x, endY: cardEdges[1].topCenter.y - arrowPadding },
+      { startX: cardEdges[1].leftCenter.x - arrowPadding, startY: cardEdges[1].leftCenter.y, endX: cardEdges[2].rightCenter.x + arrowPadding, endY: cardEdges[2].rightCenter.y },
+      { startX: cardEdges[2].topCenter.x, startY: cardEdges[2].topCenter.y - arrowPadding, endX: cardEdges[0].leftCenter.x - arrowPadding, endY: cardEdges[0].leftCenter.y }
+    ];
+    for (var ac = 0; ac < arrowCurves.length; ac++) {
+      var curve = arrowCurves[ac];
+      var line = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, curve.startX, curve.startY, curve.endX, curve.endY);
+      line.getLineFill().setSolidFill(CONFIG.COLORS.ghost_gray);
+      line.setWeight(4);
+      line.setEndArrow(SlidesApp.ArrowStyle.FILL_ARROW);
+    }
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createPyramidSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'pyramidSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'pyramidSlide', data.subhead);
+    var baseArea = layout.getRect('pyramidSlide.pyramidArea');
+    var adjustedArea = adjustAreaForSubhead(baseArea, data.subhead, layout);
+    var area = offsetRect(adjustedArea, 0, dy);
+    var levels = Array.isArray(data.levels) ? data.levels.slice(0, 4) : [];
+    if (levels.length === 0) {
+      drawBottomBarAndFooter(slide, pageNum, settings);
+      return;
+    }
+    var levelHeight = layout.pxToPt(70);
+    var levelGap = layout.pxToPt(2);
+    var totalHeight = (levelHeight * levels.length) + (levelGap * (levels.length - 1));
+    var startY = area.top + (area.height - totalHeight) / 2;
+    var pyramidWidth = layout.pxToPt(480);
+    var textColumnWidth = layout.pxToPt(400);
+    var gap = layout.pxToPt(30);
+    var pyramidLeft = area.left;
+    var textColumnLeft = pyramidLeft + pyramidWidth + gap;
+    var pyramidColors = generateProcessColors(settings.primaryColor, levels.length);
+    var baseWidth = pyramidWidth;
+    var widthIncrement = baseWidth / levels.length;
+    var centerX = pyramidLeft + pyramidWidth / 2;
+    for (var index = 0; index < levels.length; index++) {
+      var level = levels[index];
+      var levelWidth = baseWidth - (widthIncrement * (levels.length - 1 - index));
+      var levelX = centerX - levelWidth / 2;
+      var levelY = startY + index * (levelHeight + levelGap);
+      var levelBox = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, levelX, levelY, levelWidth, levelHeight);
+      levelBox.getFill().setSolidFill(pyramidColors[index]);
+      levelBox.getBorder().setTransparent();
+      var titleShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, levelX, levelY, levelWidth, levelHeight);
+      titleShape.getFill().setTransparent();
+      titleShape.getBorder().setTransparent();
+      var levelTitle = level.title || ('レベル' + (index + 1));
+      setStyledText(titleShape, levelTitle, {
+        size: CONFIG.FONTS.sizes.body,
+        bold: true,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        titleShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+      var connectionStartX = levelX + levelWidth;
+      var connectionEndX = textColumnLeft;
+      var connectionY = levelY + levelHeight / 2;
+      if (connectionEndX > connectionStartX) {
+        var connectionLine = slide.insertLine(SlidesApp.LineCategory.STRAIGHT, connectionStartX, connectionY, connectionEndX, connectionY);
+        connectionLine.getLineFill().setSolidFill('#D0D7DE');
+        connectionLine.setWeight(1.5);
+      }
+      var textShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textColumnLeft, levelY, textColumnWidth, levelHeight);
+      textShape.getFill().setTransparent();
+      textShape.getBorder().setTransparent();
+      var levelDesc = level.description || '';
+      var formattedText;
+      if (levelDesc.indexOf('•') >= 0 || levelDesc.indexOf('・') >= 0) {
+        formattedText = levelDesc;
+      } else if (levelDesc.indexOf('\n') >= 0) {
+        var lines = levelDesc.split('\n').filter(function(line) { return line.trim(); }).slice(0, 2);
+        formattedText = lines.map(function(line) { return '• ' + line.trim(); }).join('\n');
+      } else {
+        formattedText = levelDesc;
+      }
+      setStyledText(textShape, formattedText, {
+        size: CONFIG.FONTS.sizes.body - 1,
+        align: SlidesApp.ParagraphAlignment.LEFT,
+        color: CONFIG.COLORS.text_primary
+      });
+      try {
+        textShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+    }
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function drawFlowRow(slide, flow, area, settings, layout, maxStepsPerRow) {
+    if (!flow || !flow.steps || !Array.isArray(flow.steps)) {
+      return;
+    }
+    var steps = flow.steps.filter(function(step) { return step && String(step).trim(); });
+    if (steps.length === 0) return;
+    var actualSteps = maxStepsPerRow || steps.length;
+    var baseArrowSpace = layout.pxToPt(25);
+    var arrowSpace = Math.max(baseArrowSpace, area.width * 0.04);
+    var totalArrowSpace = (actualSteps - 1) * arrowSpace;
+    var cardW = (area.width - totalArrowSpace) / actualSteps;
+    var cardH = area.height;
+    var arrowHeight = Math.min(cardH * 0.3, layout.pxToPt(40));
+    var arrowWidth = arrowSpace;
+    for (var index = 0; index < steps.length; index++) {
+      var step = steps[index];
+      var cardX = area.left + index * (cardW + arrowSpace);
+      var card = slide.insertShape(SlidesApp.ShapeType.ROUND_RECTANGLE, cardX, area.top, cardW, cardH);
+      card.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      card.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+      var stepText = String(step || '').trim() || 'ステップ';
+      setStyledText(card, stepText, {
+        size: CONFIG.FONTS.sizes.body,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        card.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+      } catch (e) {}
+      if (index < steps.length - 1) {
+        var arrowStartX = cardX + cardW;
+        var arrowCenterY = area.top + cardH / 2;
+        var arrowTop = arrowCenterY - (arrowHeight / 2);
+        var arrow = slide.insertShape(SlidesApp.ShapeType.RIGHT_ARROW, arrowStartX, arrowTop, arrowWidth, arrowHeight);
+        arrow.getFill().setSolidFill(settings.primaryColor);
+        arrow.getBorder().setTransparent();
+      }
     }
   }
 
-  // 公開API
+  function createFlowChartSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'flowChartSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'flowChartSlide', data.subhead);
+    var flows = Array.isArray(data.flows) ? data.flows : [{ steps: data.steps || [] }];
+    var isDouble = flows.length > 1;
+    var upperFlow, lowerFlow, maxStepsPerRow;
+    if (!isDouble && flows[0] && flows[0].steps && flows[0].steps.length >= 5) {
+      isDouble = true;
+      var allSteps = flows[0].steps;
+      var midPoint = Math.ceil(allSteps.length / 2);
+      upperFlow = { steps: allSteps.slice(0, midPoint) };
+      lowerFlow = { steps: allSteps.slice(midPoint) };
+      maxStepsPerRow = midPoint;
+    } else {
+      upperFlow = flows[0];
+      lowerFlow = flows.length > 1 ? flows[1] : null;
+      maxStepsPerRow = Math.max(
+        (upperFlow && upperFlow.steps && upperFlow.steps.length) || 0,
+        (lowerFlow && lowerFlow.steps && lowerFlow.steps.length) || 0
+      );
+    }
+    if (isDouble) {
+      var upperArea = offsetRect(layout.getRect('flowChartSlide.upperRow'), 0, dy);
+      var lowerArea = offsetRect(layout.getRect('flowChartSlide.lowerRow'), 0, dy);
+      drawFlowRow(slide, upperFlow, upperArea, settings, layout, maxStepsPerRow);
+      if (lowerFlow && lowerFlow.steps && lowerFlow.steps.length > 0) {
+        drawFlowRow(slide, lowerFlow, lowerArea, settings, layout, maxStepsPerRow);
+      }
+    } else {
+      var singleArea = offsetRect(layout.getRect('flowChartSlide.singleRow'), 0, dy);
+      drawFlowRow(slide, flows[0], singleArea, settings, layout, null);
+    }
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createStepUpSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'stepUpSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'stepUpSlide', data.subhead);
+    var area = offsetRect(layout.getRect('stepUpSlide.stepArea'), 0, dy);
+    var items = Array.isArray(data.items) ? data.items : [];
+    if (items.length === 0) {
+      drawBottomBarAndFooter(slide, layout, pageNum, settings);
+      return;
+    }
+    var numSteps = Math.min(5, items.length);
+    var gap = 0;
+    var headerHeight = layout.pxToPt(40);
+    var maxHeight = area.height * 0.95;
+    var minHeightRatio;
+    if (numSteps <= 2) {
+      minHeightRatio = 0.70;
+    } else if (numSteps === 3) {
+      minHeightRatio = 0.60;
+    } else {
+      minHeightRatio = 0.50;
+    }
+    var minHeight = maxHeight * minHeightRatio;
+    var totalWidth = area.width;
+    var cardW = totalWidth / numSteps;
+    var stepUpColors = generateStepUpColors(settings.primaryColor, numSteps);
+    for (var idx = 0; idx < numSteps; idx++) {
+      var item = items[idx] || {};
+      var titleText = String(item.title || ('STEP ' + (idx + 1)));
+      var descText = String(item.desc || '');
+      var heightRatio = (idx / Math.max(1, numSteps - 1));
+      var cardH = minHeight + (maxHeight - minHeight) * heightRatio;
+      var left = area.left + idx * cardW;
+      var top = area.top + area.height - cardH;
+      var headerShape = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, top, cardW, headerHeight);
+      headerShape.getFill().setSolidFill(stepUpColors[idx]);
+      headerShape.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+      var bodyShape = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, left, top + headerHeight, cardW, cardH - headerHeight);
+      bodyShape.getFill().setSolidFill(CONFIG.COLORS.background_gray);
+      bodyShape.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+      var headerTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left, top, cardW, headerHeight);
+      setStyledText(headerTextShape, titleText, {
+        size: CONFIG.FONTS.sizes.body,
+        bold: true,
+        color: CONFIG.COLORS.background_white,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      }, stepUpColors[idx], settings.primaryColor);
+      try {
+        headerTextShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        headerTextShape.setAutofit(SlidesApp.AutofitType.SHRINK_ON_OVERFLOW);
+      } catch (e) {}
+      var bodyTextShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, left + layout.pxToPt(8), top + headerHeight, cardW - layout.pxToPt(16), cardH - headerHeight);
+      setStyledText(bodyTextShape, descText, {
+        size: CONFIG.FONTS.sizes.body,
+        align: SlidesApp.ParagraphAlignment.CENTER
+      });
+      try {
+        bodyTextShape.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+        bodyTextShape.setAutofit(SlidesApp.AutofitType.SHRINK_ON_OVERFLOW);
+      } catch (e) {}
+    }
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  function createImageTextSlide(slide, data, layout, pageNum, settings) {
+    setMainSlideBackground(slide, layout);
+    drawStandardTitleHeader(slide, layout, 'imageTextSlide', data.title, settings);
+    var dy = drawSubheadIfAny(slide, layout, 'imageTextSlide', data.subhead);
+    var imageUrl = data.image || '';
+    var imageCaption = data.imageCaption || '';
+    var points = Array.isArray(data.points) ? data.points : [];
+    var imagePosition = data.imagePosition === 'right' ? 'right' : 'left';
+
+    if (imagePosition === 'left') {
+      var imageArea = offsetRect(layout.getRect('imageTextSlide.leftImage'), 0, dy);
+      var textArea = offsetRect(layout.getRect('imageTextSlide.rightText'), 0, dy);
+
+      if (imageUrl) {
+        var imagePlaceholder = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, imageArea.left, imageArea.top, imageArea.width, imageArea.height);
+        imagePlaceholder.getFill().setSolidFill(CONFIG.COLORS.faint_gray);
+        imagePlaceholder.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+        var placeholderText = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, imageArea.left, imageArea.top, imageArea.width, imageArea.height);
+        setStyledText(placeholderText, '[画像]\n' + (imageCaption || ''), {
+          size: 14,
+          color: CONFIG.COLORS.neutral_gray,
+          align: SlidesApp.ParagraphAlignment.CENTER
+        });
+        try { placeholderText.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch(e){}
+      }
+
+      if (points.length > 0) {
+        createContentCushion(slide, textArea, settings, layout);
+        var padding = layout.pxToPt(20);
+        var textRect = {
+          left: textArea.left + padding,
+          top: textArea.top + padding,
+          width: textArea.width - (padding * 2),
+          height: textArea.height - (padding * 2)
+        };
+        var textShape = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textRect.left, textRect.top, textRect.width, textRect.height);
+        setBulletsWithInlineStyles(textShape, points);
+      }
+    } else {
+      var textArea2 = offsetRect(layout.getRect('imageTextSlide.leftText'), 0, dy);
+      var imageArea2 = offsetRect(layout.getRect('imageTextSlide.rightImage'), 0, dy);
+
+      if (points.length > 0) {
+        createContentCushion(slide, textArea2, settings, layout);
+        var padding2 = layout.pxToPt(20);
+        var textRect2 = {
+          left: textArea2.left + padding2,
+          top: textArea2.top + padding2,
+          width: textArea2.width - (padding2 * 2),
+          height: textArea2.height - (padding2 * 2)
+        };
+        var textShape2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, textRect2.left, textRect2.top, textRect2.width, textRect2.height);
+        setBulletsWithInlineStyles(textShape2, points);
+      }
+
+      if (imageUrl) {
+        var imagePlaceholder2 = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, imageArea2.left, imageArea2.top, imageArea2.width, imageArea2.height);
+        imagePlaceholder2.getFill().setSolidFill(CONFIG.COLORS.faint_gray);
+        imagePlaceholder2.getBorder().getLineFill().setSolidFill(CONFIG.COLORS.card_border);
+        var placeholderText2 = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, imageArea2.left, imageArea2.top, imageArea2.width, imageArea2.height);
+        setStyledText(placeholderText2, '[画像]\n' + (imageCaption || ''), {
+          size: 14,
+          color: CONFIG.COLORS.neutral_gray,
+          align: SlidesApp.ParagraphAlignment.CENTER
+        });
+        try { placeholderText2.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE); } catch(e){}
+      }
+    }
+
+    drawBottomBarAndFooter(slide, layout, pageNum, settings);
+  }
+
+  // ========================================
+  // 12. 公開API
+  // ========================================
+
   return {
-    createLessonSlide: createLessonSlide
+    createPresentation: createPresentation
   };
 })();

@@ -6,13 +6,6 @@
     <!-- 動的に生成される生徒表示・振り返り入力エリア -->
     <div id="students-view-area"></div>
 
-    <!-- 保存ボタン -->
-    <div class="action-buttons">
-      <button id="save-feedback-btn" onclick="saveFeedbackAndGenerate()" class="primary-btn" disabled>
-        振り返りを保存してスライド生成
-      </button>
-    </div>
-
     <div id="generation-status"></div>
   </div>
 </section>
@@ -22,10 +15,10 @@
     <h3>生徒: <span class="student-name-display"></span></h3>
 
     <div class="student-info">
-      <!-- 作戦の表示 -->
-      <div class="strategy-display-section">
-        <h4 style="color: #2c3e50; margin-bottom: 10px;">本日の作戦</h4>
-        <div class="student-strategies-container"></div>
+      <!-- 目標項目ごとの振り返り入力 -->
+      <div class="goal-items-feedback-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+        <h4 style="color: #2c3e50; margin-bottom: 15px;">各目標項目の振り返り</h4>
+        <div class="student-goals-feedback-container"></div>
       </div>
 
       <!-- レッスン全体の振り返り入力 -->
@@ -33,7 +26,7 @@
         <h4 style="color: #2c3e50; margin-bottom: 15px;">レッスンの振り返り</h4>
 
         <div class="form-group">
-          <label>今回のレッスンの内容:</label>
+          <label>今回のレッスンの内容</label>
           <textarea
             class="lesson-content-input"
             rows="4"
@@ -42,7 +35,7 @@
         </div>
 
         <div class="form-group">
-          <label>ふりかえり:</label>
+          <label>今回のレッスンのふりかえり</label>
           <textarea
             class="lesson-feedback-input"
             rows="5"
@@ -51,7 +44,7 @@
         </div>
 
         <div class="form-group">
-          <label>次回のレッスンでやること:</label>
+          <label>次回のレッスンでやること</label>
           <textarea
             class="lesson-next-input"
             rows="4"
@@ -59,6 +52,205 @@
           ></textarea>
         </div>
       </div>
+
+
+      <!-- 生徒の様子や態度の入力 -->
+      <div class="student-feedback-section" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+        <h4 style="color: #2c3e50; margin-bottom: 15px;">生徒の様子や態度について</h4>
+
+        <div class="form-group">
+          <label>今日の生徒の様子</label>
+          <textarea
+            class="student-condition-input"
+            rows="4"
+            placeholder="今日の生徒の様子や態度について記入してください..."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>今後のレッスン展開の展望について</label>
+          <textarea
+            class="student-growth-input"
+            rows="5"
+            placeholder="生徒の成長についてにこれから期待することや、注意すべき点を記入してください..."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>次のレッスンのために業務上知っておかなければいけないこと</label>
+          <textarea
+            class="student-info-input"
+            rows="4"
+            placeholder="次回のレッスンは18:50から開始など、業務上必要な情報を記入してください..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- 個別保存ボタン -->
+      <div class="action-buttons" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+        <button
+          class="save-single-btn primary-btn"
+          onclick="saveSingleStudentFeedback(this)"
+          style="width: 100%; background: #3498db; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;"
+        >
+          <i data-lucide="save" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+          この生徒の振り返りを保存
+        </button>
+      </div>
+
+      <!-- スライド設定セクション（保存後に表示） -->
+      <div class="slide-settings-section" style="display: none; margin-top: 30px; padding: 25px; background: #f8f9fa; border-radius: 12px; border: 2px solid #e9ecef;">
+        <h4 style="color: #2c3e50; margin-bottom: 20px; font-size: 18px; display: flex; align-items: center;">
+          <i data-lucide="settings" style="width: 20px; height: 20px; margin-right: 8px;"></i>
+          スライド生成設定
+        </h4>
+
+        <!-- レッスンのテーマ -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+            <i data-lucide="book-open" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+            レッスンのテーマ
+          </label>
+          <input
+            type="text"
+            class="lesson-theme-input"
+            placeholder="何についてのレッスンかを入力してください"
+            style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; transition: border-color 0.3s;"
+          />
+        </div>
+
+        <!-- 詳細説明 -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+            <i data-lucide="file-text" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+            詳細説明（任意）
+          </label>
+          <textarea
+            class="lesson-description-input"
+            rows="3"
+            placeholder="何について学ぶレッスンかを入力してください"
+            style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; resize: vertical;"
+          ></textarea>
+          <small style="color: #6c757d; font-size: 12px; margin-top: 4px; display: block;">
+            レッスンの目的や内容を詳細に入力すると、より適切なスライドが生成されます
+          </small>
+        </div>
+
+        <!-- 2列レイアウト -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <!-- 対象年齢 -->
+          <div class="form-group">
+            <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+              <i data-lucide="users" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              対象年齢
+            </label>
+            <select
+              class="target-age-input"
+              style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;"
+            >
+              <option value="幼児">幼児</option>
+              <option value="小学1〜2年生">小学1〜2年生</option>
+              <option value="小学3〜4年生">小学3〜4年生</option>
+              <option value="小学5〜6年生" selected>小学5〜6年生</option>
+              <option value="中学生">中学生</option>
+              <option value="高校生">高校生</option>
+            </select>
+          </div>
+
+          <!-- レッスン時間 -->
+          <div class="form-group">
+            <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+              <i data-lucide="clock" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              レッスン時間
+            </label>
+            <select
+              class="lesson-duration-input"
+              style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;"
+            >
+              <option value="5分">5分</option>
+              <option value="10分">10分</option>
+              <option value="15分" selected>15分</option>
+              <option value="20分">20分</option>
+              <option value="30分">30分</option>
+              <option value="45分">45分</option>
+              <option value="60分">60分</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2列レイアウト -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+          <!-- スライド枚数 -->
+          <div class="form-group">
+            <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+              <i data-lucide="layers" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              スライド枚数
+            </label>
+            <select
+              class="slide-count-input"
+              style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;"
+            >
+              <option value="5〜8枚">5〜8枚</option>
+              <option value="10〜15枚" selected>10〜15枚</option>
+              <option value="15〜20枚">15〜20枚</option>
+              <option value="20〜25枚">20〜25枚</option>
+              <option value="25〜30枚">25〜30枚</option>
+            </select>
+          </div>
+
+          <!-- レッスンスタイル -->
+          <div class="form-group">
+            <label style="display: flex; align-items: center; margin-bottom: 8px; font-weight: 600; color: #495057;">
+              <i data-lucide="palette" style="width: 16px; height: 16px; margin-right: 6px;"></i>
+              レッスンスタイル
+            </label>
+            <select
+              class="lesson-style-input"
+              style="width: 100%; padding: 12px; border: 2px solid #dee2e6; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;"
+            >
+              <option value="探究型" selected>探究型</option>
+              <option value="実践型">実践型</option>
+              <option value="講義型">講義型</option>
+              <option value="ゲーム型">ゲーム型</option>
+              <option value="プロジェクト型">プロジェクト型</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 再生成ボタン -->
+        <button
+          class="regenerate-slide-data-btn"
+          onclick="generateSlideData(this)"
+          style="width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);"
+        >
+          <i data-lucide="refresh-cw" style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;"></i>
+          再生成
+        </button>
+      </div>
+
+      <!-- AI生成プレビューエリア（スライドデータ生成後に表示） -->
+      <div class="ai-preview-area" style="display: none; margin-top: 25px; padding: 20px; background: #fff; border-radius: 12px; border: 2px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <h4 style="color: #2c3e50; margin-bottom: 15px; font-size: 18px; display: flex; align-items: center;">
+          <i data-lucide="file-code" style="width: 20px; height: 20px; margin-right: 8px;"></i>
+          生成されたスライド構成
+        </h4>
+        <div class="slide-structure-preview" style="padding: 15px; background: #f8f9fa; border-radius: 8px; max-height: 400px; overflow-y: auto; font-size: 14px; line-height: 1.8;"></div>
+      </div>
+
+      <!-- スライド生成ボタン（AI生成後に表示） -->
+      <div class="slide-generate-area" style="display: none; margin-top: 20px;">
+        <button
+          class="generate-single-slide-btn"
+          onclick="generateSingleStudentSlide(this)"
+          style="width: 100%; padding: 18px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);"
+        >
+          <i data-lucide="sparkles" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;"></i>
+          3. スライドを生成
+        </button>
+      </div>
+
+      <!-- ステータス表示エリア -->
+      <div class="single-student-status" style="margin-top: 15px;"></div>
     </div>
   </div>
 </template>

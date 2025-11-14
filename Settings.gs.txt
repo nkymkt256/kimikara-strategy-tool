@@ -30,11 +30,12 @@ const SETTINGS = {
 
   GCP: {
     // (必須) スクリプトプロパティから読み込む
-    PROJECT_ID: getProperty_('GCP_PROJECT_ID'),
+    // Gemini API Key（無料で使えるAPIキー）
+    GEMINI_API_KEY: getProperty_('GEMINI_API_KEY'),
 
     // (固定値) モデル名は機密情報ではないため、コードに記述してOK
-    // 利用可能なモデル: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash-exp
-    GEMINI_MODEL: 'gemini-1.5-flash'
+    // 利用可能なモデル: gemini-2.5-flash-lite, gemini-2.5-flash
+    GEMINI_MODEL: 'gemini-2.5-flash-lite'
   },
 
   SS_IDS: {
