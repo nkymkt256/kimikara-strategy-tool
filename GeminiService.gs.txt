@@ -2,130 +2,6 @@
 var GeminiService = (function() {
   'use strict';
 
-  /**
-   * スライド内容をGeminiで生成
-   */
-  function generateSlideContent(feedbackData) {
-    try {
-      // スクリプトプロパティから API Key を取得
-      var apiKey = SETTINGS.GCP.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error('GEMINI_API_KEY がスクリプトプロパティに設定されていません');
-      }
-
-      // feedbackDataから最初の生徒データを取得
-      const studentData = feedbackData.students && feedbackData.students.length > 0
-        ? feedbackData.students[0]
-        : {};
-
-      const lessonContent = studentData.lessonContent || '';
-      const lessonFeedback = studentData.lessonFeedback || '';
-      const lessonNext = studentData.lessonNext || '';
-
-      // プロンプトを組み立てる（参考システムの形式に合わせて、レッスン情報を追加）
-      var prompt =
-        'レッスン内容: ' + lessonContent + '\n' +
-        'レッスンの振り返り: ' + lessonFeedback + '\n' +
-        '次のレッスンに向けて: ' + lessonNext;
-
-      // システムインストラクション（参考システムと全く同じ）
-      var systemInstruction = buildSystemInstruction();
-
-      // Gemini 2.5 Flash Lite API エンドポイント
-      var endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' + SETTINGS.GCP.GEMINI_MODEL + ':generateContent?key=' + apiKey;
-
-      var payload = {
-        systemInstruction: systemInstruction,
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-          topP: 0.95,
-          topK: 40,
-          responseMimeType: 'text/plain'
-        }
-      };
-
-      var options = {
-        method: 'post',
-        contentType: 'application/json; charset=utf-8',
-        muteHttpExceptions: true,
-        payload: JSON.stringify(payload)
-      };
-
-      Logger.log('Gemini API リクエスト送信中...');
-      var resp = UrlFetchApp.fetch(endpoint, options);
-      var code = resp.getResponseCode();
-      var text = resp.getContentText();
-
-      if (code < 200 || code >= 300) {
-        Logger.log('Gemini API error: ' + code + ' / ' + text);
-
-        // 429エラー（レート制限）の場合
-        if (code === 429) {
-          throw new Error('API利用上限に達しました。数分待ってから再度お試しください。');
-        }
-
-        // その他のエラー
-        var errorMsg = 'Gemini API 呼び出しに失敗しました (HTTP ' + code + ')';
-        try {
-          var errorData = JSON.parse(text);
-          if (errorData.error && errorData.error.message) {
-            errorMsg += ': ' + errorData.error.message;
-          }
-        } catch (parseErr) {
-          // エラーレスポンスがJSONでない場合は無視
-        }
-        throw new Error(errorMsg);
-      }
-
-      // レスポンスを解析
-      var data = JSON.parse(text || '{}');
-      var generated = '';
-
-      // 新しい API レスポンス形式に対応
-      if (data.candidates && data.candidates.length > 0) {
-        var candidate = data.candidates[0];
-        if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          generated = candidate.content.parts[0].text || '';
-        }
-      }
-
-      if (!generated) {
-        Logger.log('API レスポンス: ' + text);
-        throw new Error('Gemini API から有効なレスポンスが得られませんでした');
-      }
-
-      Logger.log('生成されたテキスト(最初の500文字): ' + generated.substring(0, 500));
-
-      // 生成テキストから JSON 配列を抽出して返す
-      var jsonOnly = extractJsonArrayFromText(generated);
-      if (!jsonOnly) {
-        // もしコードブロックで返ってきた場合はそれを取り出す
-        jsonOnly = stripCodeFencesAndExtract(generated);
-      }
-
-      if (!jsonOnly) {
-        Logger.log('抽出に失敗しました。生成テキスト: ' + generated);
-        throw new Error('モデルから有効な JSON 配列が返されませんでした');
-      }
-
-      Logger.log('JSON抽出成功。配列の長さ: ' + JSON.parse(jsonOnly).length);
-
-      // 配列として返す
-      return JSON.parse(jsonOnly);
-    } catch (e) {
-      Logger.log('generateSlideContent error: ' + e.message + '\nStack: ' + e.stack);
-      throw e;
-    }
-  }
 
   /**
    * システムインストラクションを構築（参考システムと完全に同じ）
@@ -548,11 +424,17 @@ var GeminiService = (function() {
         'レッスン時間: ' + lessonDuration + '\n' +
         'スライド枚数: ' + slideCount + '\n' +
         'レッスンスタイル: ' + lessonStyle + '\n\n' +
-        '【レッスン内容】\n' +
-        'レッスン内容: ' + lessonContent + '\n' +
-        'レッスンの振り返り: ' + lessonFeedback + '\n' +
-        '次のレッスンに向けて: ' + lessonNext + '\n\n' +
-        '上記の設定とレッスン内容に基づいて、指定された枚数とスタイルでスライドを生成してください。';
+        '【今回実施したレッスンの振り返り（重要）】\n' +
+        '今回のレッスンの内容: ' + lessonContent + '\n' +
+        '今回のレッスンの振り返り: ' + lessonFeedback + '\n\n' +
+        '【次回のレッスンでやること（最重要・スライド構成の軸）】\n' +
+        lessonNext + '\n\n' +
+        '【スライド生成の指示】\n' +
+        '以下の点に注意してスライドを生成してください：\n' +
+        '1. 「次回のレッスンでやること」を中心的な軸として、その内容を詳しく展開したスライド構成にしてください\n' +
+        '2. 今回実施したレッスンの内容と振り返りを踏まえ、次回への繋がりを意識した構成にしてください\n' +
+        '3. 保護者に対して「今回これをやったので、次回はこれをやります」という流れが明確に伝わる内容にしてください\n' +
+        '4. 指定された枚数（' + slideCount + '）とスタイル（' + lessonStyle + '）を守ってください';
 
       // システムインストラクション（参考システムと全く同じ）
       var systemInstruction = buildSystemInstruction();
@@ -655,7 +537,6 @@ var GeminiService = (function() {
 
   // 公開API
   return {
-    generateSlideContent: generateSlideContent,
     generateSlideContentWithSettings: generateSlideContentWithSettings
   };
 })();

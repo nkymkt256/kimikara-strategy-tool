@@ -978,7 +978,7 @@ var SlideService = (function() {
       return m ? Number(m[1]) : __SECTION_COUNTER;
     })();
 
-    var num = String(parsedNum).padStart(2, '0');
+    var num = String(parsedNum);
 
     var ghostRect = layout.getRect('sectionSlide.ghostNum');
     var ghost = slide.insertShape(SlidesApp.ShapeType.TEXT_BOX, ghostRect.left, ghostRect.top, ghostRect.width, ghostRect.height);

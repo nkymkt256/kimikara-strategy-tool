@@ -16,71 +16,91 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background: #ffffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.65;
+      color: #1e293b;
+      background: #f8fafc;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     h2 {
-      color: #6C757D;
-      margin-bottom: 20px;
-      border-bottom: 3px solid #3498db;
-      padding-bottom: 10px;
+      color: #0f172a;
+      margin-bottom: 24px;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 12px;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     h3 {
-      color: #34495e;
-      margin: 20px 0 10px;
+      color: #1e293b;
+      margin: 24px 0 12px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     h4 {
-      color: #7f8c8d;
-      margin: 10px 0 5px;
-      font-size: 0.9em;
+      color: #475569;
+      margin: 12px 0 8px;
+      font-size: 1rem;
+      font-weight: 600;
     }
 
     /* フォーム要素 */
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px;
     }
 
     label {
       display: block;
       font-weight: 600;
-      margin-bottom: 5px;
-      color: #555;
+      margin-bottom: 8px;
+      color: #334155;
+      font-size: 0.875rem;
+      letter-spacing: 0.01em;
     }
 
     select, input, textarea {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 12px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
       font-size: 14px;
-      transition: border-color 0.3s;
+      transition: all 0.2s ease;
+      background: white;
+      color: #1e293b;
+    }
+
+    select:hover, input:hover, textarea:hover {
+      border-color: #cbd5e1;
     }
 
     select:focus, input:focus, textarea:focus {
       outline: none;
-      border-color: #3498db;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
     textarea {
       resize: vertical;
       font-family: inherit;
+      line-height: 1.6;
     }
 
     /* ボタン */
     button {
       padding: 12px 24px;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s ease;
       margin-right: 10px;
+      letter-spacing: 0.01em;
     }
 
     button:disabled {
@@ -89,24 +109,36 @@
     }
 
     button:not(:disabled):hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:not(:disabled):active {
+      transform: translateY(0);
     }
 
     button:not(.primary-btn) {
-      background: #95a5a6;
+      background: #64748b;
       color: white;
+    }
+
+    button:not(.primary-btn):hover:not(:disabled) {
+      background: #475569;
     }
 
     .primary-btn {
-      background: #3498db;
+      background: #2563eb;
       color: white;
     }
 
+    .primary-btn:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
     .action-buttons {
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #ddd;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
     }
 
     /* 生徒フォームコンテナ（横並び対応） */
@@ -114,23 +146,30 @@
     #students-view-area {
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      gap: 24px;
     }
 
     /* 生徒フォーム */
     .student-form {
       background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      border: 1px solid #e2e8f0;
       flex: 1;
-      min-width: 350px;
+      min-width: 380px;
+      transition: all 0.2s ease;
+    }
+
+    .student-form:hover {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-color: #cbd5e1;
     }
 
     /* 生徒が2人以上の場合は2列表示 */
     #students-area:has(.student-form:nth-child(2)) .student-form,
     #students-view-area:has(.student-form:nth-child(2)) .student-form {
-      max-width: calc(50% - 10px);
+      max-width: calc(50% - 12px);
     }
 
     /* 生徒が1人の場合は横幅いっぱい */
@@ -140,120 +179,131 @@
     }
 
     .student-info {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid #eee;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #f1f5f9;
     }
 
     .info-section {
-      background: #f9f9f9;
-      padding: 15px;
-      margin: 10px 0;
-      border-radius: 4px;
-      border-left: 4px solid #3498db;
+      background: #f8fafc;
+      padding: 18px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border-left: 4px solid #2563eb;
     }
 
     .info-section p {
-      margin: 5px 0;
+      margin: 6px 0;
       font-size: 14px;
+      color: #475569;
     }
 
     /* カテゴリ別目標表示 */
     .goal-category {
-      margin: 20px 0;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #e0e0e0;
+      margin: 24px 0;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1.5px solid #e2e8f0;
     }
 
     .category-title {
-      color: #2c3e50;
-      margin: 0 0 15px 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #3498db;
+      color: #0f172a;
+      margin: 0 0 16px 0;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #2563eb;
       font-size: 1.1em;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
     .goal-item {
       background: white;
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #e0e0e0;
-      transition: all 0.2s;
+      margin: 12px 0;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1.5px solid #e2e8f0;
+      transition: all 0.2s ease;
     }
 
     .goal-item:hover {
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-color: #3498db;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-color: #2563eb;
+      transform: translateY(-1px);
     }
 
     .goal-item-empty {
-      opacity: 0.7;
-      background: #fafafa;
+      opacity: 0.65;
+      background: #f8fafc;
     }
 
     .goal-item-header {
-      margin-bottom: 8px;
-      color: #34495e;
+      margin-bottom: 10px;
+      color: #1e293b;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .goal-item-content {
+      margin: 8px 0;
     }
 
     .goal-item-content p {
-      margin: 6px 0;
+      margin: 8px 0;
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
+      color: #475569;
     }
 
     .goal-item-content .label {
       display: inline-block;
       font-weight: 600;
-      color: #555;
+      color: #334155;
       min-width: 100px;
     }
 
     .goal-item-content .no-goal {
-      color: #999;
+      color: #94a3b8;
       font-style: italic;
     }
 
     .item-strategy-input {
       width: 100%;
-      min-height: 50px;
-      margin-top: 5px;
+      min-height: 60px;
+      margin-top: 8px;
     }
 
     /* 作戦表示（読み取り専用） */
     .strategy-content.readonly {
-      background: #f0f8ff;
-      padding: 10px;
+      background: #fafafa;
+      padding: 4px 12px;
       border-radius: 4px;
       white-space: pre-wrap;
-      border: 1px solid #d0e7f9;
+      border: 1.5px solid #bfdbfe;
       font-size: 14px;
-      line-height: 1.5;
-      margin: 8px 0;
+      line-height: 1.6;
+      color: #1e293b;
     }
 
     .section {
-      margin: 10px 0;
+      margin: 12px 0;
     }
 
     .strategy-container {
-      margin-top: 20px;
-      border-top: 2px solid #3498db;
-      border-radius: 8px;
+      margin-top: 24px;
+      border-top: 2px solid #2563eb;
+      border-radius: 12px;
     }
 
     /* 作戦入力ページのメインカード風スタイル
        - ページコンテンツ内のみ適用して他ページに影響しないようにする */
     .page-content .strategy-input-container .strategy-container {
-      border: 1px solid #e0e6ee;
-      border-radius: 12px;
-      padding: 24px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 32px;
       background: #ffffff;
-      box-shadow: 0 4px 12px rgba(16,24,40,0.04);
-      min-height: 70vh; /* かなり下まで高さを確保 */
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      min-height: 70vh;
       display: flex;
       flex-direction: column;
     }
@@ -261,60 +311,57 @@
     /* 作戦表示カード */
     .strategy-card {
       background: white;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      border-left: 5px solid #3498db;
-    }
-
-    .strategy-content.readonly {
-      background: #f0f8ff;
-      padding: 15px;
-      border-radius: 4px;
-      white-space: pre-wrap;
-      font-family: monospace;
-      border: 1px solid #d0e7f9;
+      padding: 24px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+      border-left: 4px solid #2563eb;
+      border: 1.5px solid #e2e8f0;
+      border-left: 4px solid #2563eb;
     }
 
     .section {
-      margin: 15px 0;
+      margin: 16px 0;
     }
 
     /* ステータス表示 */
     #save-status, #generation-status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
       font-weight: 600;
+      font-size: 14px;
     }
 
     .date-display {
-      background: #ecf0f1;
-      padding: 10px 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
+      background: #f1f5f9;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
       font-weight: 600;
-      color: #2c3e50;
+      color: #0f172a;
+      border: 1.5px solid #e2e8f0;
     }
 
     /* Toast通知 */
     .toast {
       position: fixed;
-      bottom: -100px;
-      right: 20px;
-      background: #2ecc71;
+      top: -100px;
+      right: 24px;
+      background: #10b981;
       color: white;
-      padding: 15px 25px;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      padding: 16px 28px;
+      border-radius: 10px;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
       z-index: 9999;
-      transition: bottom 0.3s ease;
+      transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-weight: 600;
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .toast.show {
-      bottom: 20px;
+      top: 24px;
     }
 
     /* ローディング表示 */
@@ -323,18 +370,18 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 300px;
-      padding: 40px;
+      min-height: 320px;
+      padding: 48px;
     }
 
     .loading-spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #2563eb;
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+      width: 56px;
+      height: 56px;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 24px;
     }
 
     @keyframes spin {
@@ -343,34 +390,56 @@
     }
 
     .spin-icon {
-      animation: spin 1s linear infinite;
+      animation: spin 0.8s linear infinite;
     }
 
     .loading-text {
-      color: #666;
-      font-size: 16px;
+      color: #64748b;
+      font-size: 15px;
       font-weight: 500;
+      letter-spacing: 0.01em;
     }
 
     /* レスポンシブ */
     @media (max-width: 768px) {
       body {
-        padding: 10px;
+        padding: 12px;
+      }
+
+      .container {
+        padding: 16px 20px;
       }
 
       .student-form {
-        padding: 15px;
-        max-width: 100%; /* モバイルでは1列表示 */
+        padding: 20px;
+        max-width: 100%;
         min-width: 100%;
       }
 
       .strategy-card {
-        padding: 15px;
+        padding: 20px;
+      }
+
+      .page-content .strategy-input-container .strategy-container {
+        padding: 24px;
       }
 
       button {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        margin-right: 0;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      .goal-category {
+        padding: 16px;
+      }
+
+      .goal-item {
+        padding: 14px;
       }
     }
   </style>
@@ -527,6 +596,7 @@
 
       const formDiv = selectElement.closest('.student-form');
       const infoDiv = formDiv.querySelector('.student-info');
+      const goalsContainer = formDiv.querySelector('.student-goals-container');
 
       // キャッシュがあればそれを使用
       if (studentGoalsCache[studentId]) {
@@ -534,6 +604,15 @@
         infoDiv.style.display = 'block';
         return;
       }
+
+      // ローディング表示
+      infoDiv.style.display = 'block';
+      goalsContainer.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 40px 20px;">
+          <div class="loading-spinner" style="width: 40px; height: 40px; border-width: 3px; margin-bottom: 16px;"></div>
+          <div class="loading-text">生徒データを読み込んでいます...</div>
+        </div>
+      `;
 
       // キャッシュがなければサーバーから取得
       google.script.run
@@ -543,7 +622,13 @@
           displayStudentData(formDiv, data);
           infoDiv.style.display = 'block';
         })
-        .withFailureHandler(showError)
+        .withFailureHandler(function(error) {
+          const friendlyMessage = getFriendlyErrorMessage(error);
+          showToast(`生徒データの取得に失敗しました: ${friendlyMessage}`, 5000);
+          console.error('生徒データ取得エラー:', error);
+          // エラー時はローディングを削除
+          goalsContainer.innerHTML = '<p style="color: #ef4444;">データの読み込みに失敗しました</p>';
+        })
         .getStudentData(studentId);
     }
 
@@ -630,8 +715,9 @@
       try {
         const data = JSON.parse(saved);
         // 生徒数を復元
-        if (data.studentCount) {
-          document.getElementById('student-count').value = data.studentCount;
+        const studentCountElement = document.getElementById('student-count');
+        if (data.studentCount && studentCountElement) {
+          studentCountElement.value = data.studentCount;
           handleStudentCountChange();
 
           // 少し待ってから各フィールドを復元
@@ -717,23 +803,20 @@
         return;
       }
 
-      const statusDiv = document.getElementById('save-status');
-      statusDiv.textContent = '保存中...';
+      // すぐに作戦表示ページに遷移
+      google.script.run
+        .withSuccessHandler(updatePage)
+        .withFailureHandler(showError)
+        .loadPage('Page-StrategyView');
 
+      // バックグラウンドでスプレッドシートに保存
       google.script.run
         .withSuccessHandler(function(result) {
-          statusDiv.textContent = '保存しました！作戦表示ページに移動します...';
-
-          // 作戦表示ページに遷移（ローカルストレージは残しておく）
-          setTimeout(() => {
-            google.script.run
-              .withSuccessHandler(updatePage)
-              .withFailureHandler(showError)
-              .loadPage('Page-StrategyView');
-          }, 1000);
+          showToast('スプレッドシートに保存されました');
         })
         .withFailureHandler(function(error) {
-          statusDiv.textContent = 'エラー: ' + error;
+          const friendlyMessage = getFriendlyErrorMessage(error);
+          showToast(`スプレッドシートへの保存に失敗しました: ${friendlyMessage}`, 5000);
         })
         .saveStrategy(data);
     }
@@ -785,63 +868,57 @@
       const template = document.getElementById('student-view-template');
       viewArea.innerHTML = '';
 
-      // ローディング表示
-      viewArea.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner" style="margin: 0 auto;"></div><p style="color: #666; margin-top: 20px;">生徒データを読み込んでいます...</p></div>';
+      // 各生徒のデータをキャッシュから取得して表示
+      data.students.forEach((student, index) => {
+        if (!student || !student.id) return;
 
-      // 各生徒のデータをサーバーから取得（最新の振り返りを含む）
-      const studentLoadPromises = data.students.map((student, index) => {
-        if (!student.id) return Promise.resolve();
+        const clone = template.content.cloneNode(true);
+        const formDiv = clone.querySelector('.student-form');
+        formDiv.setAttribute('data-student-id', student.id);
 
-        return new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(function(goalData) {
-              resolve({ student, goalData });
-            })
-            .withFailureHandler(function(error) {
-              console.error('生徒データ取得エラー:', error);
-              resolve({ student, goalData: null });
-            })
-            .getStudentData(student.id);
-        });
-      });
+        // 生徒名を表示
+        const studentInfo = studentsListCache.find(s => s.id === student.id);
+        clone.querySelector('.student-name-display').textContent =
+          studentInfo ? studentInfo.name : `生徒ID: ${student.id}`;
 
-      // すべての生徒データを取得完了後に表示
-      Promise.all(studentLoadPromises).then(results => {
-        viewArea.innerHTML = '';
-
-        results.forEach(({ student, goalData }) => {
-          if (!student || !student.id) return;
-
-          const clone = template.content.cloneNode(true);
-          const formDiv = clone.querySelector('.student-form');
-          formDiv.setAttribute('data-student-id', student.id);
-
-          // 生徒名を表示
-          const studentInfo = studentsListCache.find(s => s.id === student.id);
-          clone.querySelector('.student-name-display').textContent =
-            studentInfo ? studentInfo.name : `生徒ID: ${student.id}`;
-
-          // サーバーから取得した最新のデータを表示（振り返りを含む）
-          if (goalData && goalData.goals) {
-            displayStrategyViewData(formDiv, goalData, student.itemStrategies || []);
+        // キャッシュから目標データを取得して表示
+        const goalData = studentGoalsCache[student.id];
+        if (goalData && goalData.goals) {
+          displayStrategyViewData(formDiv, goalData, student.itemStrategies || []);
+        } else {
+          // キャッシュにない場合は作戦のみ表示
+          const goalsFeedbackContainer = formDiv.querySelector('.student-goals-feedback-container');
+          if (goalsFeedbackContainer && student.itemStrategies && student.itemStrategies.length > 0) {
+            let html = '<div class="goal-category"><h4 class="category-title">今日の作戦</h4>';
+            student.itemStrategies.forEach(item => {
+              html += `
+                <div class="goal-item">
+                  <div class="goal-item-header">
+                    <strong>${item.item}</strong>
+                  </div>
+                  <div class="goal-item-content">
+                    <p><span class="label">作戦:</span> <span class="strategy-content readonly">${item.strategy}</span></p>
+                  </div>
+                </div>
+              `;
+            });
+            html += '</div>';
+            goalsFeedbackContainer.innerHTML = html;
           }
-
-          viewArea.appendChild(clone);
-
-          // Lucideアイコンを初期化
-          if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-          }
-        });
-
-        const saveBtn = document.getElementById('save-feedback-btn');
-        if (saveBtn) {
-          saveBtn.disabled = false;
         }
-      }).catch(error => {
-        console.error('生徒データ取得エラー:', error);
-        viewArea.innerHTML = '<p style="color: #ef4444;">生徒データの読み込みに失敗しました</p>';
+
+        viewArea.appendChild(clone);
+
+        // Lucideアイコンを初期化
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
       });
+
+      const saveBtn = document.getElementById('save-feedback-btn');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+      }
     }
 
     // 作戦表示ページ用のデータ表示（目標と作戦を各項目ごとに表示）
@@ -972,36 +1049,26 @@
         return;
       }
 
-      // ボタンを無効化
-      button.disabled = true;
-      statusDiv.innerHTML = '<p style="color: #3498db; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i>保存中...</p>';
-      lucide.createIcons();
+      // すぐにstudentDataをフォームに保存
+      formDiv.setAttribute('data-saved-student-data', JSON.stringify(studentData));
 
-      // スプレッドシートに保存（AI生成はしない）
+      // 作戦入力のキャッシュをクリア
+      clearStrategyCache();
+
+      // スライド設定セクションを即座に表示
+      slideSettingsSection.style.display = 'block';
+
+      // スライド設定セクションまでスクロール
+      slideSettingsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // バックグラウンドでスプレッドシートに保存
       google.script.run
         .withSuccessHandler(function(result) {
-          statusDiv.innerHTML = '<p style="color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 8px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>保存完了！</p>';
-          lucide.createIcons();
-          showToast('振り返りを保存しました');
-
-          // 保存完了後、作戦入力のキャッシュをクリア
-          clearStrategyCache();
-
-          // スライド設定セクションを表示
-          slideSettingsSection.style.display = 'block';
-
-          // スライド設定セクションまでスクロール
-          slideSettingsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-          // studentDataをフォームに保存
-          formDiv.setAttribute('data-saved-student-data', JSON.stringify(studentData));
-
-          button.disabled = false;
+          showToast('スプレッドシートに保存されました');
         })
         .withFailureHandler(function(error) {
-          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: ${error.message}</p>`;
-          lucide.createIcons();
-          button.disabled = false;
+          const friendlyMessage = getFriendlyErrorMessage(error);
+          showToast(`スプレッドシートへの保存に失敗しました: ${friendlyMessage}`, 5000);
         })
         .saveSingleStudentFeedback(studentData);
     }
@@ -1050,10 +1117,13 @@
         lessonStyle: lessonStyle
       };
 
-      // ボタンを無効化
+      // ボタンのテキストを変更して無効化
+      const originalButtonText = button.innerHTML;
       button.disabled = true;
-      statusDiv.innerHTML = '<p style="color: #667eea; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" class="spin-icon" style="width: 16px; height: 16px;"></i>AIでスライドデータを生成中...</p>';
-      lucide.createIcons();
+      button.innerHTML = '<i data-lucide="loader" class="spin-icon" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>AIで生成中...';
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
 
       // サーバー側でスライドデータを生成
       google.script.run
@@ -1062,15 +1132,21 @@
 
           // 結果の検証
           if (!result || !result.slideContent || !Array.isArray(result.slideContent)) {
-            statusDiv.innerHTML = '<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: スライドコンテンツの生成に失敗しました</p>';
-            lucide.createIcons();
-            console.error('Invalid result:', result);
+            button.innerHTML = originalButtonText;
             button.disabled = false;
+            statusDiv.innerHTML = '<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: スライドコンテンツの生成に失敗しました。もう一度お試しください。</p>';
+            if (typeof lucide !== 'undefined') {
+              lucide.createIcons();
+            }
+            console.error('Invalid result:', result);
             return;
           }
 
-          statusDiv.innerHTML = '<p style="color: #10b981; display: flex; align-items: center; gap: 8px; font-weight: 600;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>スライドデータの生成完了！</p>';
-          lucide.createIcons();
+          button.innerHTML = '<i data-lucide="check-circle" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>生成完了！';
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
+          statusDiv.innerHTML = '';
 
           // slideContentをボタンに保存
           generateBtn.setAttribute('data-slide-content', JSON.stringify(result.slideContent));
@@ -1122,107 +1198,22 @@
           setTimeout(() => {
             slideGenerateArea.style.display = 'block';
             slideGenerateArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }, 300);
 
-          button.disabled = false;
+            // 2秒後にボタンを元に戻す
+            setTimeout(() => {
+              button.innerHTML = originalButtonText;
+              button.disabled = false;
+            }, 2000);
+          }, 300);
         })
         .withFailureHandler(function(error) {
-          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>エラー: ${error.message}</p>`;
-          lucide.createIcons();
+          button.innerHTML = originalButtonText;
           button.disabled = false;
+          handleApiError(error, statusDiv, 'スライドデータ生成');
         })
         .generateSlideDataWithSettings(studentData, settings);
     }
 
-    /**
-     * AI生成内容を再生成
-     */
-    function regenerateAIContent(button) {
-      const formDiv = button.closest('.student-form');
-      const statusDiv = formDiv.querySelector('.single-student-status');
-      const aiPreviewContent = formDiv.querySelector('.ai-preview-content');
-      const slideGenerateArea = formDiv.querySelector('.slide-generate-area');
-      const generateBtn = slideGenerateArea.querySelector('.generate-single-slide-btn');
-
-      // 編集されたプレビュー内容を取得
-      const editedPreview = aiPreviewContent.value;
-
-      if (!editedPreview || !editedPreview.trim()) {
-        alert('プレビュー内容が空です');
-        return;
-      }
-
-      // ボタンを無効化
-      button.disabled = true;
-      statusDiv.innerHTML = '<p style="color: #3498db;">🔄 再生成中...</p>';
-
-      // 編集された内容をパースしてslideContentに反映
-      // （簡易的にテキストを保持し、スライド生成時に使用）
-      // 実際のslideContent構造は保持しつつ、テキストのみ更新
-      const studentDataStr = generateBtn.getAttribute('data-student-data');
-
-      if (studentDataStr) {
-        const studentData = JSON.parse(studentDataStr);
-
-        // 編集内容を再度Geminiに投げてJSON化
-        google.script.run
-          .withSuccessHandler(function(result) {
-            console.log('AI再生成完了。結果:', result);
-
-            // 結果の検証
-            if (!result || !result.slideContent || !Array.isArray(result.slideContent)) {
-              statusDiv.innerHTML = '<p style="color: red;">エラー: スライドコンテンツの再生成に失敗しました</p>';
-              console.error('Invalid result:', result);
-              button.disabled = false;
-              return;
-            }
-
-            statusDiv.innerHTML = '<p style="color: green;">✓ 再生成完了！</p>';
-            showToast('AI内容を再生成しました');
-
-            // 新しいslideContentをボタンに保存
-            generateBtn.setAttribute('data-slide-content', JSON.stringify(result.slideContent));
-
-            // プレビューを更新（見やすくインデント）
-            // slideContentは配列形式
-            let previewText = `【レッスン報告スライド】\n\n`;
-
-            result.slideContent.forEach((slide, index) => {
-              // スライドタイトルを左インデント
-              const slideTitle = slide.title || `スライド${index + 1}`;
-              previewText += `  ${index + 1}. [${slide.type}] ${slideTitle}\n`;
-
-              // コンテンツを更に左インデント
-              if (slide.points && Array.isArray(slide.points)) {
-                slide.points.forEach(item => {
-                  previewText += `     • ${item}\n`;
-                });
-              } else if (slide.items && Array.isArray(slide.items)) {
-                slide.items.forEach(item => {
-                  const itemText = typeof item === 'string' ? item : (item.title || item.label || JSON.stringify(item));
-                  previewText += `     • ${itemText}\n`;
-                });
-              } else if (slide.steps && Array.isArray(slide.steps)) {
-                slide.steps.forEach((step, i) => {
-                  previewText += `     ${i + 1}. ${step}\n`;
-                });
-              }
-              previewText += '\n';
-            });
-
-            aiPreviewContent.value = previewText;
-            button.disabled = false;
-          })
-          .withFailureHandler(function(error) {
-            statusDiv.innerHTML = `<p style="color: red;">エラー: ${error.message}</p>`;
-            button.disabled = false;
-          })
-          .saveSingleStudentFeedback(studentData);
-      } else {
-        statusDiv.innerHTML = '<p style="color: red;">生徒データが見つかりません</p>';
-        button.disabled = false;
-      }
-    }
 
     /**
      * 生徒1人分のスライドを生成
@@ -1243,13 +1234,17 @@
       const slideContent = JSON.parse(slideContentStr);
       const studentData = JSON.parse(studentDataStr);
 
-      // ボタンを無効化
+      // ボタンのテキストを変更して無効化
+      const originalButtonText = button.innerHTML;
       button.disabled = true;
-      statusDiv.innerHTML = '<p style="color: #f5576c; display: flex; align-items: center; gap: 8px;"><i data-lucide="loader" class="spin-icon" style="width: 18px; height: 18px;"></i>Googleスライドを作成中...</p>';
-      lucide.createIcons();
+      button.innerHTML = '<i data-lucide="loader" class="spin-icon" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>スライド作成中...';
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
 
       google.script.run
         .withSuccessHandler(function(result) {
+          // 成功時は元のデザインで表示（グラデーション保持）
           statusDiv.innerHTML = `
             <div style="padding: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; color: white;">
               <p style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 600; font-size: 16px;">
@@ -1265,16 +1260,21 @@
               </a>
             </div>
           `;
-          lucide.createIcons();
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
           showToast('スライドを生成しました！');
+
+          // ボタンを元に戻す
+          button.innerHTML = originalButtonText;
           setTimeout(() => {
             button.disabled = false;
           }, 2000);
         })
         .withFailureHandler(function(error) {
-          statusDiv.innerHTML = `<p style="color: #ef4444; display: flex; align-items: center; gap: 8px;"><i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>エラー: ${error.message}</p>`;
-          lucide.createIcons();
+          button.innerHTML = originalButtonText;
           button.disabled = false;
+          handleApiError(error, statusDiv, 'スライド生成');
         })
         .generateSingleStudentSlide(slideContent, studentData);
     }
@@ -1314,8 +1314,9 @@
           }
         })
         .withFailureHandler(function(error) {
+          const friendlyMessage = getFriendlyErrorMessage(error);
           console.error('生徒一覧の取得エラー:', error);
-          showError('生徒一覧の取得に失敗しました');
+          showToast(`生徒一覧の取得に失敗しました: ${friendlyMessage}`, 5000);
 
           // エラー時もローディングを解除
           hideLoadingOnStrategyInput();
@@ -1353,6 +1354,48 @@
     function showError(message) {
       console.error('エラー:', message);
       showToast('エラー: ' + message, 5000);
+    }
+
+    /**
+     * エラーメッセージをユーザーフレンドリーに変換
+     * 429エラー（Google API制限）を検出して適切なメッセージを返す
+     */
+    function getFriendlyErrorMessage(error) {
+      const errorStr = error.toString ? error.toString() : String(error);
+      const errorMessage = error.message || errorStr;
+
+      // 429エラー（Too Many Requests）を検出
+      if (errorStr.includes('429') || errorMessage.includes('429') ||
+          errorStr.includes('Too Many Requests') || errorMessage.includes('Too Many Requests') ||
+          errorStr.includes('Quota exceeded') || errorMessage.includes('Quota exceeded')) {
+        return 'Google APIの制限に達しました。もう一度お試しください。';
+      }
+
+      // その他のエラー
+      return errorMessage;
+    }
+
+    /**
+     * エラーハンドラー共通処理
+     * ステータス表示要素にエラーメッセージを表示
+     */
+    function handleApiError(error, statusDiv, context = '') {
+      const friendlyMessage = getFriendlyErrorMessage(error);
+      console.error(`${context}エラー:`, error);
+
+      if (statusDiv) {
+        statusDiv.innerHTML = `
+          <p style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>
+            エラー: ${friendlyMessage}
+          </p>
+        `;
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      } else {
+        showToast(`エラー: ${friendlyMessage}`, 5000);
+      }
     }
   </script>
 </body>

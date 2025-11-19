@@ -85,22 +85,16 @@ function getLatestStrategy() {
 }
 
 /**
- * 生徒1人分の振り返りを保存してAI生成
+ * 生徒1人分の振り返りをスプレッドシートに保存
  */
 function saveSingleStudentFeedback(studentData) {
   try {
-    // 1. スプレッドシートに保存
+    // スプレッドシートに保存
     SpreadsheetService.writeSingleFeedback(studentData);
-
-    // 2. Geminiでスライド内容を生成
-    const slideContent = GeminiService.generateSlideContent({
-      students: [studentData]
-    });
 
     return {
       success: true,
-      message: '振り返りを保存しました',
-      slideContent: slideContent
+      message: '振り返りを保存しました'
     };
   } catch (e) {
     throw new Error('振り返りの保存に失敗しました: ' + e.message);

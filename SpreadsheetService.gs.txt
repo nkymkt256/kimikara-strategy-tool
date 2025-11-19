@@ -50,7 +50,7 @@ const SpreadsheetService = (function() {
 
           if (studentName && studentName.toString().trim()) {
             students.push({
-              id: (i + 1).toString().padStart(3, '0'), // 001, 002, ... の形式でIDを生成
+              id: (i + 1).toString(), // 1, 2, 3, ... の形式でIDを生成
               name: studentName.toString().trim(),
               contact: '' // 連絡先は別列にある場合は後で追加
             });
